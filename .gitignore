@@ -1,0 +1,11 @@
+node_modules/
+.env
+results/*
+!results/.gitkeep
+!results/REPORT.md
+!results/summary-latest.json
+!results/runs/
+results/runs/*
+!results/runs/*.json
+*.log
+.DS_Store

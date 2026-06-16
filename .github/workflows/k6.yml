@@ -1,0 +1,115 @@
+name: k6 Performance
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Load profile to run
+        required: true
+        default: smoke
+        type: choice
+        options:
+          - smoke
+          - load
+          - stress
+          - spike
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: k6 — smoke (CI gate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      testflow:
+        image: qaschool/testflow:latest
+        ports:
+          - 5050:5050
+        options: >-
+          --health-interval 15s
+          --health-timeout 10s
+          --health-retries 6
+          --health-start-period 90s
+    steps:
+      - name: Checkout test suite
+        uses: actions/checkout@v5
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+
+      - name: Verify TestFlow is reachable
+        run: curl -sf http://localhost:5050/health && echo "TestFlow OK"
+
+      - name: Run k6 smoke
+        env:
+          CI: "true"
+          BASE_URL: http://localhost:5050
+          K6_PROFILE: smoke
+          K6_SCENARIO: api-health
+          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+        run: |
+          mkdir -p results
+          k6 run --summary-export=results/summary.json scenarios/smoke/api-health.js
+
+      - name: Upload k6 summary
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: k6-summary-smoke
+          path: results/
+          if-no-files-found: ignore
+
+  load-manual:
+    name: k6 — ${{ github.event.inputs.profile || 'skipped' }}
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      testflow:
+        image: qaschool/testflow:latest
+        ports:
+          - 5050:5050
+        options: >-
+          --health-interval 15s
+          --health-timeout 10s
+          --health-retries 6
+          --health-start-period 90s
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+
+      - name: Run k6 — mixed traffic
+        env:
+          BASE_URL: http://localhost:5050
+          K6_PROFILE: ${{ github.event.inputs.profile }}
+          K6_SCENARIO: mixed-traffic
+          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+        run: |
+          mkdir -p results
+          k6 run --summary-export=results/summary.json scenarios/load/mixed-traffic.js
+
+      - name: Upload k6 summary
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: k6-summary-${{ github.event.inputs.profile }}
+          path: results/

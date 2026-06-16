@@ -1,0 +1,86 @@
+{
+  "runId": "2026-06-16T23-16-29Z",
+  "generatedAt": "2026-06-16T23:21:50.009Z",
+  "baseUrl": "http://localhost:5050",
+  "profile": "smoke",
+  "passed": true,
+  "scenarios": [
+    {
+      "suite": "authenticated-user",
+      "durationMs": 1898.035375,
+      "httpFailed": 0,
+      "p95": 18.036189149999995,
+      "avg": 7.0442962499999995,
+      "checks": 1,
+      "iterations": 32,
+      "vusMax": 2,
+      "httpCount": 128
+    },
+    {
+      "suite": "load-auth",
+      "durationMs": 1017.747084,
+      "httpFailed": 0,
+      "p95": 6.483577549999999,
+      "avg": 3.7014576034482753,
+      "checks": 1,
+      "iterations": 58,
+      "vusMax": 2,
+      "httpCount": 58
+    },
+    {
+      "suite": "load-users",
+      "durationMs": 1485.996042,
+      "httpFailed": 0,
+      "p95": 8.352522899999997,
+      "avg": 4.143050733333333,
+      "checks": 1,
+      "iterations": 59,
+      "vusMax": 2,
+      "httpCount": 60
+    },
+    {
+      "suite": "login-flow",
+      "durationMs": 1334.956959,
+      "httpFailed": 0,
+      "p95": 8.023937499999999,
+      "avg": 4.134937014814814,
+      "checks": 1,
+      "iterations": 45,
+      "vusMax": 2,
+      "httpCount": 135
+    },
+    {
+      "suite": "mixed-traffic",
+      "durationMs": 1982.036834,
+      "httpFailed": 0,
+      "p95": 8.336420799999997,
+      "avg": 3.932722815217392,
+      "checks": 1,
+      "iterations": 46,
+      "vusMax": 2,
+      "httpCount": 92
+    },
+    {
+      "suite": "smoke",
+      "durationMs": 2034.009959,
+      "httpFailed": 0,
+      "p95": 8.082229199999997,
+      "avg": 3.8192791555555554,
+      "checks": 1,
+      "iterations": 30,
+      "vusMax": 2,
+      "httpCount": 90
+    },
+    {
+      "suite": "spike",
+      "durationMs": 328.698709,
+      "httpFailed": 0,
+      "p95": 24.77105879999996,
+      "avg": 8.496462371298387,
+      "checks": 1,
+      "iterations": 439,
+      "vusMax": 2,
+      "httpCount": 1317
+    }
+  ]
+}
