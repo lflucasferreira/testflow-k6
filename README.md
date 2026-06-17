@@ -2,9 +2,11 @@
 
 k6 performance and load testing suite for [TestFlow](https://github.com/qaschoolbr/testflow) — complements functional automation in `testflow-cypress`, `testflow-playwright`, and `testflow-pytest`.
 
+**Live report (GitHub Pages):** https://lflucasferreira.github.io/testflow-k6/
+
 ## Description
 
-This project validates **Service Level Objectives (SLOs)** for TestFlow under different load patterns:
+This project validates **Service Level Objectives (SLOs)** for TestFlow under different load patterns. Every scenario applies k6 **checks** (functional assertions) and **thresholds** (SLO gates) — a run fails if either breaches limits.
 
 | Test type | Scenario | Purpose |
 |-----------|----------|---------|
@@ -17,6 +19,79 @@ This project validates **Service Level Objectives (SLOs)** for TestFlow under di
 | **Browser** | `scenarios/browser/login-page.js` | k6 browser — login page under load |
 
 Endpoints mirror functional API tests: `/health`, `/api/auth/login`, `/api/users`, static `/web/*.html`.
+
+## Test coverage — what is applied
+
+### Shared HTTP checks (`lib/http.js`)
+
+Every helper that hits the API or static pages runs k6 `check()` assertions:
+
+| Helper | Checks applied |
+|--------|----------------|
+| `getHealth()` | status 200; response time &lt; 1 s |
+| `getUsers(token?)` | status 200; body has non-empty `users[]`; response &lt; 2 s |
+| `getStaticPage(path)` | status 200; `Content-Type` includes `text/html` |
+| `login()` (`lib/auth.js`) | status 200; JSON `token` is a string |
+
+### Scenario catalog
+
+| Scenario | Script | npm script | Profile | What runs each iteration |
+|----------|--------|------------|---------|--------------------------|
+| **smoke** | `scenarios/smoke/api-health.js` | `test:smoke` | smoke | `GET /health` → `GET /api/users` → `POST /api/auth/login` |
+| **load-auth** | `scenarios/load/api-auth.js` | `test:load:auth` | load | `POST /api/auth/login` + token checks; custom `login_duration`, `login_errors` |
+| **load-users** | `scenarios/load/api-users.js` | `test:load:users` | load | `setup()`: login once → `GET /api/users` (Bearer token) |
+| **mixed-traffic** | `scenarios/load/mixed-traffic.js` | `test:load:mixed` | load | Login → weighted traffic: 35% health, 30% users (auth), 15% static pages, 20% users (anon) |
+| **login-flow** | `journeys/login-flow.js` | `test:journey:login` | load | Group 01: `GET /web/login.html` → Group 02: API login → Group 03: `GET /web/dashboard.html` |
+| **authenticated-user** | `journeys/authenticated-user.js` | `test:journey:auth` | load | Login → `GET /api/users` → dashboard → team pages |
+| **spike** | `scenarios/spike/api-spike.js` | `test:spike` | spike | Health + login + users under burst (5→100 VUs); `spike_failures` custom metric |
+| **stress** | `scenarios/stress/api-breakpoint.js` | `test:stress` | stress | Ramp to 100 VUs; counts `degraded_responses` when latency &gt; 3 s / 5 s |
+| **soak** | `scenarios/soak/api-endurance.js` | `test:soak` | soak | 15 VUs steady for `K6_SOAK_MINUTES` (default 30 min) |
+| **browser** | `scenarios/browser/login-page.js` | `test:browser:login` | smoke + browser | Chromium: fill `data-testid` login form, submit, measure `browser_page_load` |
+
+Static pages used in mixed/journey scenarios: `login.html`, `dashboard.html`, `team.html`, `settings.html`, `activity.html`.
+
+### Load profiles (`config/profiles.js`)
+
+| Profile | Stages (summary) | Typical use |
+|---------|------------------|-------------|
+| **smoke** | 2 VUs · ~35 s | Local gate, `test:report` suite |
+| **ci** | 3→5 VUs · ~55 s | GitHub Actions when `CI=true` |
+| **load** | 10→25 VUs · 7 min | Sustained production-like traffic |
+| **stress** | 20→100 VUs · 12 min | Find breaking point |
+| **spike** | 5→100 VUs burst · ~2.5 min | Sudden traffic surge |
+| **soak** | 15 VUs · 30+ min steady | Endurance / leak detection |
+| **breakpoint** | stepped 10→125 VUs | Extended capacity ramp |
+
+### SLO thresholds (`config/thresholds.js`)
+
+| Profile | http_req_failed | http_req_duration | Per-endpoint p95 | checks |
+|---------|-----------------|-------------------|------------------|--------|
+| **smoke** | &lt; 0.5% | p95 &lt; 1500 ms, avg &lt; 800 ms | health 500 ms · users 1500 ms · login 2000 ms | &gt; 99% |
+| **load** | &lt; 1% | p95 &lt; 2500 ms, p99 &lt; 6000 ms | health 800 ms · users 2000 ms · login 3000 ms | &gt; 98% |
+| **stress / spike** | &lt; 5% | p95 &lt; 5000 ms | — | &gt; 95% |
+| **soak** | &lt; 0.5% | p95 &lt; 2500 ms, avg &lt; 1200 ms | — | &gt; 99% |
+
+Scenario-specific custom thresholds: `login_duration`, `login_errors`, `login_flow_duration`, `spike_failures`, `browser_page_load`, etc.
+
+### CI report suite (`npm run test:report`)
+
+Runs **7 scenarios** with `K6_PROFILE=smoke` (fast, ~4 min total):
+
+1. smoke · 2. load-auth · 3. load-users · 4. mixed-traffic · 5. login-flow · 6. authenticated-user · 7. spike
+
+Generates:
+
+- `results/REPORT.md` — Markdown summary
+- `results/report/index.html` — HTML dashboard with **PASS/FAIL** per scenario, checks, and thresholds
+- `results/summary-latest.json` — machine-readable summary
+- `results/runs/<run-id>-*.json` — raw k6 exports
+
+On every push to `main`, the HTML report is published to **GitHub Pages** (workflow: `.github/workflows/pages.yml`).
+
+```bash
+npm run test:report    # run suite + generate HTML
+npm run report:open    # open results/report/index.html locally
+```
 
 ## Folder Structure
 
@@ -32,9 +107,10 @@ testflow-k6/
 │   ├── soak/         # Endurance
 │   └── browser/      # k6 browser module
 ├── journeys/         # Multi-step user flows
-├── results/          # JSON summaries (gitignored)
-├── docker-compose.yml
-└── .github/workflows/k6.yml
+├── results/          # REPORT.md, JSON summaries, HTML report (partially tracked)
+├── .github/workflows/
+│   ├── k6.yml        # CI smoke gate + manual load
+│   └── pages.yml     # GitHub Pages HTML report
 ```
 
 ## Prerequisites
@@ -205,14 +281,13 @@ Performance tests **are** the test suite. Success criteria:
 - `checks` rate ≥ 99% (smoke/load) or ≥ 95% (stress)
 - `http_req_failed` rate below SLO per profile
 
-JSON summaries export to `results/summary-latest.json`.
-
 ```bash
-npm run test:ci
-
-# Full suite report (smoke profile, generates results/REPORT.md)
-npm run test:report
+npm run test:ci          # single smoke (CI parity)
+npm run test:report      # 7-scenario suite + HTML report
+npm run report:open      # open HTML in browser
 ```
+
+JSON summary: `results/summary-latest.json` · HTML: `results/report/index.html`
 
 ## SLO Thresholds
 
@@ -228,14 +303,19 @@ Tune in `config/thresholds.js` and `config/profiles.js`.
 
 ## CI/CD
 
-Workflow: `.github/workflows/k6.yml`
+Workflows:
 
-| Job | Trigger | What it runs |
-|-----|---------|--------------|
-| `smoke` | push / PR | Light load against `qaschool/testflow:latest` |
-| `load-manual` | workflow_dispatch | User-selected profile (load/stress/spike) |
+| Workflow | Trigger | What it runs |
+|----------|---------|--------------|
+| `k6.yml` — smoke | push / PR | Single smoke scenario — fast CI gate (~1 min) |
+| `k6.yml` — load-manual | workflow_dispatch | User-selected profile (load / stress / spike) |
+| `pages.yml` | push to `main` | Full 7-scenario report → **GitHub Pages HTML** |
 
 Set repository secret `DEMO_PASSWORD` for CI (same as Cypress/Playwright).
+
+**Enable GitHub Pages:** repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
+Published URL: https://lflucasferreira.github.io/testflow-k6/
 
 ## Technologies Used
 

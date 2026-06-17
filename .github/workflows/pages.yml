@@ -1,0 +1,78 @@
+name: Deploy Performance Report
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: Run suite & publish HTML report
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      testflow:
+        image: qaschool/testflow:latest
+        ports:
+          - 5050:5050
+        options: >-
+          --health-interval 15s
+          --health-timeout 10s
+          --health-retries 6
+          --health-start-period 90s
+    steps:
+      - name: Checkout test suite
+        uses: actions/checkout@v5
+
+      - name: Install k6
+        run: |
+          curl -fsSL https://dl.k6.io/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+
+      - name: Verify TestFlow is reachable
+        run: curl -sf http://localhost:5050/health && echo "TestFlow OK"
+
+      - name: Run full smoke-profile report suite
+        env:
+          CI: "true"
+          BASE_URL: http://localhost:5050
+          K6_PROFILE: smoke
+          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          REPORT_OUTPUT_DIR: site
+        run: |
+          mkdir -p results site
+          npm run test:report || true
+          if [ ! -f site/index.html ]; then
+            echo "HTML report was not generated" >&2
+            exit 1
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: report
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

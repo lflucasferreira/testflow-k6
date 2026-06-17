@@ -4,15 +4,18 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-latest="$(ls -t results/report-*.html 2>/dev/null | head -1 || true)"
-
-if [[ -n "$latest" ]]; then
-  target="$latest"
-elif [[ -f results/report.html ]]; then
-  target="results/report.html"
+if [[ -f results/report/index.html ]]; then
+  target="results/report/index.html"
 else
-  echo "No HTML report found. Run with dashboard first, e.g.: npm run test:smoke:ui" >&2
-  exit 1
+  latest="$(ls -t results/report-*.html 2>/dev/null | head -1 || true)"
+  if [[ -n "$latest" ]]; then
+    target="$latest"
+  elif [[ -f results/report.html ]]; then
+    target="results/report.html"
+  else
+    echo "No HTML report found. Run: npm run test:report" >&2
+    exit 1
+  fi
 fi
 
 if command -v open >/dev/null 2>&1; then

@@ -20,6 +20,8 @@ declare -a SUITES=(
   "spike|scenarios/spike/api-spike.js"
 )
 
+declare -a FAILURES=()
+
 echo "=== testflow-k6 report run (${RUN_ID}) ==="
 
 for entry in "${SUITES[@]}"; do
@@ -27,17 +29,28 @@ for entry in "${SUITES[@]}"; do
   script="${entry##*|}"
   export K6_SCENARIO="$name"
   out="results/runs/${RUN_ID}-${name}.json"
+  exit_file="results/runs/${RUN_ID}-${name}.exit"
 
   echo ""
   echo ">>> Running: ${name}"
+  exit_code=0
   if bash scripts/run-k6.sh run --summary-export="${out}" "${script}"; then
     echo "PASS: ${name}"
   else
-    echo "FAIL: ${name}" >&2
-    exit 1
+    exit_code=$?
+    echo "FAIL: ${name} (exit ${exit_code})" >&2
+    FAILURES+=("${name}")
   fi
+  echo "${exit_code}" > "${exit_file}"
 done
 
 node scripts/generate-report.mjs "${RUN_ID}"
+
 echo ""
 echo "Report written to results/REPORT.md"
+echo "HTML report: results/report/index.html"
+
+if [ "${#FAILURES[@]}" -gt 0 ]; then
+  echo "Failed scenarios: ${FAILURES[*]}" >&2
+  exit 1
+fi
