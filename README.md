@@ -58,15 +58,19 @@ k6 version
 ### Linux (Debian/Ubuntu)
 
 ```bash
-sudo gpg -k
-sudo gpg --no-default-keyring \
-  --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
-  --keyserver hkp://keyserver.ubuntu.com:80 \
-  --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+curl -fsSL https://dl.k6.io/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg
 echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
   | sudo tee /etc/apt/sources.list.d/k6.list
 sudo apt-get update
 sudo apt-get install k6
+k6 version
+```
+
+### Linux (Fedora/CentOS)
+
+```bash
+sudo dnf install https://dl.k6.io/rpm/repo.rpm
+sudo dnf install k6
 k6 version
 ```
 
@@ -76,6 +80,15 @@ k6 version
 winget install k6 --source winget
 k6 version
 ```
+
+### Windows (Chocolatey)
+
+```powershell
+choco install k6
+k6 version
+```
+
+Alternatively, download the MSI or standalone binary from [k6 GitHub Releases](https://github.com/grafana/k6/releases).
 
 ### Verify installation
 
@@ -134,6 +147,34 @@ npm run test:journey:login
 # Browser (requires k6 with browser support)
 npm run test:browser:login
 ```
+
+### HTML report in the browser (k6 Web Dashboard)
+
+Enable the [official k6 web dashboard](https://grafana.com/docs/k6/latest/results-output/web-dashboard/) to watch metrics live and export a self-contained HTML report when the test finishes.
+
+```bash
+# Smoke with live dashboard + auto-open HTML report (macOS: `open`)
+npm run test:smoke:ui
+
+# Other scenarios with UI
+npm run test:load:auth:ui
+npm run test:load:mixed:ui
+
+# Any test — set K6_DASHBOARD=true
+K6_DASHBOARD=true K6_SCENARIO=spike npm run test:spike
+
+# Re-open the latest HTML report
+npm run report:open
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `K6_DASHBOARD` | — | Set to `true` to enable web dashboard + HTML export |
+| `K6_DASHBOARD_OPEN` | `true` | Open HTML report in browser after test (disabled in CI) |
+| `K6_WEB_DASHBOARD_EXPORT` | `results/report-<scenario>.html` | Output HTML path |
+| `K6_WEB_DASHBOARD_PORT` | `5665` | Live dashboard port |
+
+During the run, open **http://localhost:5665** for real-time graphs. When the test ends, the HTML file opens automatically (or run `npm run report:open`).
 
 ### Docker k6 runs
 
@@ -202,6 +243,17 @@ Set repository secret `DEMO_PASSWORD` for CI (same as Cypress/Playwright).
 - [k6 browser module](https://grafana.com/docs/k6/latest/using-k6-browser/) — optional UI perf
 - Docker — TestFlow sandbox + k6 runner
 - GitHub Actions — CI smoke gate + manual load runs
+- [Reveal.js](https://revealjs.com/) — training slides (`docs/slides/`)
+
+## Slides & training
+
+```bash
+npm install
+npm run slides        # http://localhost:3337/docs/slides/
+npm run slides:open   # serve + open browser
+```
+
+Deck covers: k6 basics, installation, test types, thresholds, testflow-k6 structure, reports, CI, and advanced topics.
 
 ## Contribution Guidelines
 

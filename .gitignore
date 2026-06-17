@@ -7,5 +7,6 @@ results/*
 !results/runs/
 results/runs/*
 !results/runs/*.json
+results/report*.html
 *.log
 .DS_Store

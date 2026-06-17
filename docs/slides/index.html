@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>k6 — Performance Testing &amp; Load</title>
+    <meta name="description" content="Apresentação completa sobre Grafana k6: instalação, tipos de teste, thresholds, TestFlow e tópicos avançados." />
+
+    <link rel="icon" href="assets/k6-logo.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="../../node_modules/reveal.js/dist/reveal.css" />
+    <link rel="stylesheet" href="../../node_modules/reveal.js/dist/theme/black.css" />
+    <link rel="stylesheet" href="../../node_modules/highlight.js/styles/github-dark.css" />
+    <link rel="stylesheet" href="css/theme-k6.css" />
+    <script>
+      if (window.location.search.match(/print-pdf/gi)) {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.type = 'text/css'
+        link.href = 'css/print-pdf.css'
+        document.head.appendChild(link)
+      }
+    </script>
+  </head>
+  <body>
+    <div class="footer-bar" aria-hidden="true"></div>
+
+    <div class="reveal">
+      <div class="slides">
+
+        <!-- Title -->
+        <section class="slide-title" data-auto-animate>
+          <div class="logo-wrap">
+            <img src="assets/k6-logo.svg" alt="Grafana k6 logo" width="88" height="88" />
+            <span class="wordmark">k6</span>
+          </div>
+          <h1>Testes de performance &amp; carga</h1>
+          <p class="subtitle">Smoke · Load · Stress · Spike · Soak · SLOs · TestFlow · CI</p>
+          <span class="badge">testflow-k6 · Grafana k6 · JavaScript</span>
+        </section>
+
+        <!-- O que é -->
+        <section>
+          <h2>O que é o k6?</h2>
+          <p class="fragment fade-up">
+            Ferramenta open-source da <strong>Grafana Labs</strong> para testes de
+            <strong>performance, carga e confiabilidade</strong> — scripts em JavaScript,
+            motor em Go, baixo consumo de recursos.
+          </p>
+          <ul class="fragment fade-up">
+            <li>Foco em <strong>APIs HTTP</strong>, gRPC, WebSockets e browser (módulo experimental)</li>
+            <li>Métricas built-in: latência, throughput, taxa de erro, checks</li>
+            <li><strong>Thresholds</strong> definem SLOs — o teste falha se não cumprir</li>
+            <li>Integração com Grafana Cloud, Prometheus, Datadog, CI/CD</li>
+          </ul>
+        </section>
+
+        <!-- Por que k6 -->
+        <section>
+          <h2>Por que usar k6?</h2>
+          <div class="feature-grid">
+            <div class="feature-card fragment fade-up">
+              <div class="icon">⚡</div>
+              <h4>Developer-friendly</h4>
+              <p>Scripts JS/TS — mesma linguagem do time de QA/dev.</p>
+            </div>
+            <div class="feature-card fragment fade-up">
+              <div class="icon">📊</div>
+              <h4>SLOs como código</h4>
+              <p>Thresholds versionados junto com os cenários.</p>
+            </div>
+            <div class="feature-card fragment fade-up">
+              <div class="icon">🐳</div>
+              <h4>CLI + Docker</h4>
+              <p>Roda local, CI ou cluster sem JVM pesado.</p>
+            </div>
+            <div class="feature-card fragment fade-up">
+              <div class="icon">🔗</div>
+              <h4>TestFlow ready</h4>
+              <p>Complementa Cypress, Playwright e PyTest.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tipos de teste -->
+        <section>
+          <h2>Tipos de teste de performance</h2>
+          <table class="compare-table compact fragment fade-up">
+            <thead>
+              <tr><th>Tipo</th><th>Objetivo</th><th>testflow-k6</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Smoke</strong></td><td>Disponibilidade + baseline</td><td><code>scenarios/smoke/</code></td></tr>
+              <tr><td><strong>Load</strong></td><td>Tráfego esperado</td><td><code>scenarios/load/</code></td></tr>
+              <tr><td><strong>Stress</strong></td><td>Além do normal — achar limite</td><td><code>scenarios/stress/</code></td></tr>
+              <tr><td><strong>Spike</strong></td><td>Pico súbito + recuperação</td><td><code>scenarios/spike/</code></td></tr>
+              <tr><td><strong>Soak</strong></td><td>Carga longa — memory leak</td><td><code>scenarios/soak/</code></td></tr>
+              <tr><td><strong>Breakpoint</strong></td><td>Ramp até degradação</td><td><code>K6_PROFILE=breakpoint</code></td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- Pré-requisitos -->
+        <section>
+          <h2>Pré-requisitos</h2>
+          <div class="two-col">
+            <div>
+              <h3>Ambiente</h3>
+              <ul>
+                <li class="fragment fade-up"><strong>Node.js 20+</strong> (npm scripts do projeto)</li>
+                <li class="fragment fade-up"><strong>k6</strong> nativo <em>ou</em> Docker</li>
+                <li class="fragment fade-up"><strong>TestFlow</strong> em <code>:5050</code></li>
+                <li class="fragment fade-up">Editor: VS Code / Cursor</li>
+              </ul>
+            </div>
+            <div class="terminal fragment fade-up">
+              <div class="terminal-header">
+                <span class="terminal-dot red"></span>
+                <span class="terminal-dot yellow"></span>
+                <span class="terminal-dot green"></span>
+              </div>
+              <div class="terminal-body">
+                <div><span class="prompt">$</span> docker run -p 5050:5050 qaschool/testflow:latest</div>
+                <div><span class="prompt">$</span> curl http://localhost:5050/health</div>
+                <div>{"status":"ok",...}</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Instalação -->
+        <section>
+          <section>
+            <h2>Instalação — macOS</h2>
+            <ol class="steps">
+              <li class="fragment fade-up">
+                <div>
+                  <strong>Homebrew (recomendado)</strong><br />
+                  <code>brew install k6</code>
+                </div>
+              </li>
+              <li class="fragment fade-up">
+                <div>
+                  <strong>Verificar</strong><br />
+                  <code>k6 version</code> → <code>k6 v1.x.x</code>
+                </div>
+              </li>
+              <li class="fragment fade-up">
+                <div>
+                  <strong>Clone testflow-k6</strong><br />
+                  <code>npm install</code>
+                </div>
+              </li>
+            </ol>
+          </section>
+
+          <section>
+            <h2>Instalação — Linux</h2>
+            <p class="fragment fade-up" style="font-size: 0.62em; color: var(--cypress-muted); margin-bottom: 0.6em;">
+              Debian/Ubuntu — repo oficial Grafana (<a href="https://grafana.com/docs/k6/latest/set-up/install-k6/">docs</a>)
+            </p>
+            <ol class="steps">
+              <li class="fragment fade-up">
+                <div>
+                  <strong>Adicionar chave GPG e repositório</strong><br />
+                  <code>curl -fsSL https://dl.k6.io/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg</code><br />
+                  <code>echo "deb [signed-by=…] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list</code>
+                </div>
+              </li>
+              <li class="fragment fade-up">
+                <div>
+                  <strong>Instalar e verificar</strong><br />
+                  <code>sudo apt-get update && sudo apt-get install k6</code><br />
+                  <code>k6 version</code>
+                </div>
+              </li>
+              <li class="fragment fade-up">
+                <div>
+                  <strong>Fedora / CentOS</strong><br />
+                  <code>sudo dnf install https://dl.k6.io/rpm/repo.rpm && sudo dnf install k6</code>
+                </div>
+              </li>
+              <li class="fragment fade-up">
+                <div>
+                  <strong>Clone testflow-k6</strong><br />
+                  <code>npm install</code>
+                </div>
+              </li>
+            </ol>
+          </section>
+
+          <section>
+            <h2>Instalação — Windows</h2>
+            <ol class="steps">
+              <li class="fragment fade-up">
+                <div>
+                  <strong>winget (recomendado — pacote oficial)</strong><br />
+                  <code>winget install k6 --source winget</code>
+                </div>
+              </li>
+              <li class="fragment fade-up">
+                <div>
+                  <strong>Chocolatey (alternativa)</strong><br />
+                  <code>choco install k6</code>
+                </div>
+              </li>
+              <li class="fragment fade-up">
+                <div>
+                  <strong>Verificar</strong><br />
+                  <code>k6 version</code> → <code>k6 v1.x.x</code>
+                </div>
+              </li>
+              <li class="fragment fade-up">
+                <div>
+                  <strong>Clone testflow-k6</strong><br />
+                  <code>npm install</code>
+                </div>
+              </li>
+            </ol>
+            <p class="fragment fade-up" style="font-size: 0.58em; color: var(--cypress-muted); margin-top: 0.8em;">
+              Ou baixe o instalador MSI / binário em
+              <a href="https://github.com/grafana/k6/releases">GitHub Releases</a>.
+            </p>
+          </section>
+
+          <section>
+            <h2>Instalação — Docker (sem k6 local)</h2>
+            <pre class="fragment fade-up"><code class="language-bash"># TestFlow + k6 via compose
+npm run docker:up
+
+# Smoke via wrapper (fallback Docker automático)
+npm run test:smoke
+
+# Imagem oficial
+docker run --rm -i grafana/k6:1.0.0 version</code></pre>
+            <p class="fragment fade-up" style="font-size: 0.6em; color: var(--cypress-muted);">
+              <code>scripts/run-k6.sh</code> detecta se k6 existe; senão usa Docker com
+              <code>host.docker.internal:5050</code>.
+            </p>
+          </section>
+        </section>
+
+        <!-- Estrutura projeto -->
+        <section>
+          <h2>Estrutura testflow-k6</h2>
+          <div class="two-col">
+            <pre class="fragment fade-up"><code class="hljs">testflow-k6/
+├── config/
+│   ├── environments.js   # BASE_URL, credenciais
+│   ├── profiles.js       # smoke, load, stress…
+│   └── thresholds.js     # SLOs por perfil
+├── lib/
+│   ├── auth.js           # login TestFlow
+│   ├── http.js           # GET health, users…
+│   └── summary.js        # export JSON
+├── scenarios/
+│   ├── smoke/ load/ stress/
+│   ├── spike/ soak/ browser/
+├── journeys/             # fluxos multi-step
+├── scripts/run-k6.sh
+└── results/REPORT.md</code></pre>
+            <ul class="fragment fade-up">
+              <li><code>config/</code> — perfis reutilizáveis entre cenários</li>
+              <li><code>lib/</code> — DRY: auth, checks, endpoints</li>
+              <li><code>scenarios/</code> — um arquivo = um tipo de carga</li>
+              <li><code>journeys/</code> — login → browse (group)</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Primeiro teste -->
+        <section>
+          <h2>Seu primeiro teste</h2>
+          <pre class="fragment fade-up"><code class="language-javascript">// scenarios/smoke/api-health.js
+import { sleep } from 'k6'
+import { getHealth, getUsers } from '../../lib/http.js'
+import { login } from '../../lib/auth.js'
+import { getProfile } from '../../config/profiles.js'
+import { getThresholds } from '../../config/thresholds.js'
+
+export const options = {
+  scenarios: {
+    smoke_api: {
+      executor: 'ramping-vus',
+      ...getProfile('smoke'),
+    },
+  },
+  thresholds: getThresholds('smoke'),
+}
+
+export default function () {
+  getHealth()
+  getUsers()
+  login()
+  sleep(1)
+}</code></pre>
+          <pre class="fragment fade-up"><code class="language-bash">npm run test:smoke</code></pre>
+        </section>
+
+        <!-- Conceitos VU -->
+        <section>
+          <section>
+            <h2>Conceitos fundamentais</h2>
+            <table class="compare-table compact fragment fade-up">
+              <thead><tr><th>Conceito</th><th>Significado</th></tr></thead>
+              <tbody>
+                <tr><td><strong>VU</strong> (Virtual User)</td><td>Usuário simulado executando o script</td></tr>
+                <tr><td><strong>Iteration</strong></td><td>Uma execução completa da função <code>default</code></td></tr>
+                <tr><td><strong>Duration</strong></td><td>Tempo total do teste</td></tr>
+                <tr><td><strong>Throughput</strong></td><td>Requisições por segundo (RPS)</td></tr>
+                <tr><td><strong>Check</strong></td><td>Assertion pass/fail por requisição</td></tr>
+                <tr><td><strong>Threshold</strong></td><td>SLO — falha o teste se violado</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section>
+            <h2>Stages — ramp up / steady / down</h2>
+            <pre class="fragment fade-up"><code class="language-javascript">// config/profiles.js — perfil load
+load: {
+  stages: [
+    { duration: '1m', target: 10 },   // ramp up
+    { duration: '3m', target: 25 },   // steady
+    { duration: '2m', target: 25 },
+    { duration: '1m', target: 0 },     // ramp down
+  ],
+  gracefulRampDown: '30s',
+}</code></pre>
+            <div class="command-tags fragment fade-up">
+              <span class="cmd-tag">target = VUs</span>
+              <span class="cmd-tag">duration</span>
+              <span class="cmd-tag">gracefulRampDown</span>
+            </div>
+          </section>
+
+          <section>
+            <h2>Thresholds — SLOs</h2>
+            <pre class="fragment fade-up"><code class="language-javascript">// config/thresholds.js
+export const smokeThresholds = {
+  http_req_failed: ['rate&lt;0.005'],
+  http_req_duration: ['p(95)&lt;1500', 'avg&lt;800'],
+  'http_req_duration{endpoint:health}': ['p(95)&lt;500'],
+  'http_req_duration{endpoint:auth_login}': ['p(95)&lt;2000'],
+  checks: ['rate&gt;0.99'],
+}</code></pre>
+            <p class="fragment fade-up" style="font-size: 0.58em; color: var(--cypress-muted);">
+              Alinhado aos budgets dos testes Cypress/Playwright (&lt; 2s login, &lt; 1s health).
+            </p>
+          </section>
+        </section>
+
+        <!-- HTTP & checks -->
+        <section>
+          <section>
+            <h2>Módulo HTTP &amp; checks</h2>
+            <pre class="fragment fade-up"><code class="language-javascript">import http from 'k6/http'
+import { check } from 'k6'
+
+const res = http.get(`${BASE_URL}/api/users`, {
+  tags: { endpoint: 'users', name: 'GET /api/users' },
+})
+
+check(res, {
+  'status 200': (r) => r.status === 200,
+  'has users array': (r) => Array.isArray(r.json('users')),
+  'p95 budget': (r) => r.timings.duration &lt; 2000,
+})</code></pre>
+            <div class="command-tags fragment fade-up">
+              <span class="cmd-tag">http.get/post</span>
+              <span class="cmd-tag">tags</span>
+              <span class="cmd-tag">check()</span>
+              <span class="cmd-tag">timings.duration</span>
+            </div>
+          </section>
+
+          <section>
+            <h2>Auth TestFlow</h2>
+            <pre class="fragment fade-up"><code class="language-javascript">// lib/auth.js
+export function login() {
+  const res = http.post(`${BASE_URL}/api/auth/login`, payload, {
+    headers: { 'Content-Type': 'application/json' },
+    tags: { endpoint: 'auth_login' },
+  })
+  check(res, { 'login 200': (r) => r.status === 200 })
+  return res.json('token')
+}
+
+// Uso com Bearer
+http.get(`${BASE_URL}/api/users`, {
+  headers: { Authorization: `Bearer ${token}` },
+})</code></pre>
+            <p class="fragment fade-up" style="font-size: 0.58em;">
+              Credenciais: <code>DEMO_EMAIL</code> / <code>DEMO_PASSWORD</code> via <code>.env</code>
+            </p>
+          </section>
+
+          <section>
+            <h2>setup() — dados compartilhados</h2>
+            <pre class="fragment fade-up"><code class="language-javascript">export function setup() {
+  const token = login()
+  return { token }
+}
+
+export default function (data) {
+  getUsers(data.token)
+}</code></pre>
+            <p class="fragment fade-up" style="font-size: 0.6em; color: var(--cypress-muted);">
+              <code>setup()</code> roda uma vez antes do teste — ideal para obter token sem repetir login a cada VU na fase de setup.
+            </p>
+          </section>
+        </section>
+
+        <!-- Executors -->
+        <section>
+          <section>
+            <h2>Executors (cenários avançados)</h2>
+            <table class="compare-table compact fragment fade-up">
+              <thead><tr><th>Executor</th><th>Quando usar</th></tr></thead>
+              <tbody>
+                <tr><td><code>ramping-vus</code></td><td>Load/stress com stages (padrão do projeto)</td></tr>
+                <tr><td><code>constant-vus</code></td><td>N VUs fixos por X tempo</td></tr>
+                <tr><td><code>constant-arrival-rate</code></td><td>X iter/s constantes (RPS alvo)</td></tr>
+                <tr><td><code>ramping-arrival-rate</code></td><td>RPS crescente — spike realista</td></tr>
+                <tr><td><code>shared-iterations</code></td><td>N iter totais entre VUs (browser)</td></tr>
+                <tr><td><code>per-vu-iterations</code></td><td>Cada VU roda N vezes</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section>
+            <h2>Multi-scenario</h2>
+            <pre class="fragment fade-up"><code class="language-javascript">export const options = {
+  scenarios: {
+    browse: {
+      executor: 'constant-vus',
+      vus: 10,
+      duration: '5m',
+      exec: 'browse',
+      tags: { scenario: 'browse' },
+    },
+    api_write: {
+      executor: 'ramping-arrival-rate',
+      startRate: 5,
+      timeUnit: '1s',
+      stages: [{ duration: '5m', target: 50 }],
+      exec: 'write',
+      tags: { scenario: 'write' },
+    },
+  },
+}
+
+export function browse() { /* GET pages */ }
+export function write() { /* POST login */ }</code></pre>
+          </section>
+        </section>
+
+        <!-- Métricas custom -->
+        <section>
+          <h2>Métricas customizadas</h2>
+          <pre class="fragment fade-up"><code class="language-javascript">import { Trend, Rate, Counter } from 'k6/metrics'
+
+const loginDuration = new Trend('login_duration', true)
+const loginErrors = new Rate('login_errors')
+
+export const options = {
+  thresholds: {
+    login_duration: ['p(95)&lt;2000'],
+    login_errors: ['rate&lt;0.01'],
+  },
+}
+
+// No teste:
+loginDuration.add(res.timings.duration)
+loginErrors.add(res.status !== 200)</code></pre>
+          <div class="command-tags fragment fade-up">
+            <span class="cmd-tag">Trend</span>
+            <span class="cmd-tag">Rate</span>
+            <span class="cmd-tag">Counter</span>
+            <span class="cmd-tag">Gauge</span>
+          </div>
+        </section>
+
+        <!-- Relatórios -->
+        <section>
+          <section>
+            <h2>Relatórios &amp; handleSummary</h2>
+            <pre class="fragment fade-up"><code class="language-javascript">// lib/summary.js
+export function handleSummary(data) {
+  return {
+    stdout: textSummary(data),
+    'results/summary-latest.json': JSON.stringify(data),
+  }
+}
+
+// No cenário:
+export { handleSummary } from '../../lib/summary.js'</code></pre>
+            <pre class="fragment fade-up"><code class="language-bash">npm run test:report    # suíte + REPORT.md
+npm run test:smoke:ui  # HTML dashboard no browser</code></pre>
+          </section>
+
+          <section>
+            <h2>Web Dashboard (HTML no browser)</h2>
+            <pre class="fragment fade-up"><code class="language-bash"># Live dashboard + export HTML ao final
+npm run test:smoke:ui
+
+# Variáveis k6 nativas
+K6_WEB_DASHBOARD=true \
+K6_WEB_DASHBOARD_OPEN=true \
+K6_WEB_DASHBOARD_EXPORT=results/report.html \
+k6 run script.js</code></pre>
+            <ul class="fragment fade-up" style="font-size: 0.68em;">
+              <li>Ao vivo: <strong>http://localhost:5665</strong></li>
+              <li>HTML self-contained para compartilhar com o time</li>
+              <li><code>npm run report:open</code> reabre o último report</li>
+            </ul>
+          </section>
+        </section>
+
+        <!-- Journeys -->
+        <section>
+          <h2>User journeys — group()</h2>
+          <pre class="fragment fade-up"><code class="language-javascript">import { group, sleep } from 'k6'
+
+export default function authenticatedJourney() {
+  let token = null
+
+  group('01_login', () => {
+    token = login()
+    sleep(0.3)
+  })
+
+  group('02_fetch_users', () => {
+    getUsers(token)
+  })
+
+  group('03_browse_dashboard', () => {
+    getStaticPage('/web/dashboard.html')
+  })
+}</code></pre>
+          <p class="fragment fade-up" style="font-size: 0.58em; color: var(--cypress-muted);">
+            Métricas agrupadas no summary — facilita identificar gargalo por etapa.
+          </p>
+        </section>
+
+        <!-- CI -->
+        <section>
+          <h2>CI/CD — GitHub Actions</h2>
+          <pre class="fragment fade-up"><code class="language-yaml">services:
+  testflow:
+    image: qaschool/testflow:latest
+    ports: ['5050:5050']
+
+steps:
+  - run: k6 run scenarios/smoke/api-health.js
+    env:
+      CI: 'true'
+      BASE_URL: http://localhost:5050
+      DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}</code></pre>
+          <ul class="fragment fade-up" style="font-size: 0.65em;">
+            <li>PR: smoke gate (~1 min, ≤5 VUs)</li>
+            <li><code>workflow_dispatch</code>: load/stress manual</li>
+            <li>Artifacts: JSON summary + HTML report</li>
+          </ul>
+        </section>
+
+        <!-- Avançado -->
+        <section>
+          <section>
+            <h2>Tópicos avançados</h2>
+            <div class="feature-grid" style="font-size: 0.58em;">
+              <div class="feature-card fragment fade-up">
+                <h4>k6 Browser</h4>
+                <p>Core Web Vitals, login UI — <code>scenarios/browser/</code></p>
+              </div>
+              <div class="feature-card fragment fade-up">
+                <h4>xk6 extensions</h4>
+                <p>SQL, Kafka, Redis — build customizado</p>
+              </div>
+              <div class="feature-card fragment fade-up">
+                <h4>k6 Cloud</h4>
+                <p>Load distribuído, geo, histórico</p>
+              </div>
+              <div class="feature-card fragment fade-up">
+                <h4>Outputs</h4>
+                <p>InfluxDB, Prometheus, Datadog, OTLP</p>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h2>k6 Browser module</h2>
+            <pre class="fragment fade-up"><code class="language-javascript">import { browser } from 'k6/browser'
+
+export const options = {
+  scenarios: {
+    ui: {
+      executor: 'shared-iterations',
+      vus: 2,
+      iterations: 4,
+      options: { browser: { type: 'chromium' } },
+    },
+  },
+}
+
+export default async function () {
+  const page = await browser.newPage()
+  await page.goto(`${BASE_URL}/web/login.html`)
+  await page.locator('[data-testid="login-email"]').fill(email)
+  await page.locator('[data-testid="login-submit"]').click()
+  await page.close()
+}</code></pre>
+            <pre class="fragment fade-up"><code class="language-bash">npm run test:browser:login</code></pre>
+          </section>
+
+          <section>
+            <h2>Weighted traffic &amp; think time</h2>
+            <pre class="fragment fade-up"><code class="language-javascript">// lib/http.js — tráfego realista
+weightedPick([
+  { weight: 35, fn: () => getHealth() },
+  { weight: 30, fn: () => getUsers(token) },
+  { weight: 20, fn: () => getStaticPage(page) },
+  { weight: 15, fn: () => login() },
+])
+sleep(thinkTime(0.5, 2))  // pausa entre iterações</code></pre>
+            <p class="fragment fade-up" style="font-size: 0.58em;">
+              Cenário <code>mixed-traffic.js</code> simula mix de leitura, auth e páginas estáticas.
+            </p>
+          </section>
+
+          <section>
+            <h2>Variáveis de ambiente</h2>
+            <table class="compare-table compact fragment fade-up">
+              <thead><tr><th>Variável</th><th>Default</th><th>Uso</th></tr></thead>
+              <tbody>
+                <tr><td><code>BASE_URL</code></td><td>localhost:5050</td><td>Alvo do teste</td></tr>
+                <tr><td><code>K6_PROFILE</code></td><td>smoke</td><td>load, stress, spike, soak</td></tr>
+                <tr><td><code>K6_DASHBOARD</code></td><td>—</td><td>HTML report + live UI</td></tr>
+                <tr><td><code>K6_SOAK_MINUTES</code></td><td>30</td><td>Duração do soak</td></tr>
+                <tr><td><code>CI</code></td><td>—</td><td>Perfil CI mais leve</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section>
+            <h2>k6 vs ferramentas clássicas</h2>
+            <table class="compare-table fragment fade-up" style="font-size: 0.55em;">
+              <thead>
+                <tr><th></th><th>k6</th><th>JMeter</th><th>Gatling</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>Scripts</strong></td><td>JavaScript</td><td>GUI + XML</td><td>Scala DSL</td></tr>
+                <tr><td><strong>Recursos</strong></td><td>Leve (Go)</td><td>JVM pesado</td><td>JVM</td></tr>
+                <tr><td><strong>SLOs</strong></td><td>Thresholds nativos</td><td>Assertions</td><td>Checks</td></tr>
+                <tr><td><strong>CI</strong></td><td>Excelente</td><td>OK</td><td>OK</td></tr>
+                <tr><td><strong>Curva</strong></td><td>Baixa p/ devs JS</td><td>Alta</td><td>Média</td></tr>
+              </tbody>
+            </table>
+          </section>
+        </section>
+
+        <!-- Boas práticas -->
+        <section>
+          <h2>Boas práticas</h2>
+          <ul style="font-size: 0.72em;">
+            <li class="fragment fade-up">Comece com <strong>smoke</strong> — gate rápido antes de load pesado</li>
+            <li class="fragment fade-up">Centralize endpoints em <code>lib/endpoints.js</code></li>
+            <li class="fragment fade-up">Reuse <code>lib/http.js</code> — checks consistentes</li>
+            <li class="fragment fade-up">Defina SLOs em <code>config/thresholds.js</code> antes dos cenários</li>
+            <li class="fragment fade-up">Use <code>tags</code> por endpoint — thresholds granulares</li>
+            <li class="fragment fade-up">Separe perfis em <code>config/profiles.js</code></li>
+            <li class="fragment fade-up">Não hardcode credenciais — <code>.env</code> + secrets CI</li>
+            <li class="fragment fade-up">Soak/stress só em ambiente dedicado — não em prod</li>
+            <li class="fragment fade-up">Correlacione com testes funcionais (Cypress/Playwright)</li>
+            <li class="fragment fade-up">Versione reports JSON/HTML como artifacts, não no repo</li>
+          </ul>
+        </section>
+
+        <!-- Comandos npm -->
+        <section>
+          <h2>Comandos testflow-k6</h2>
+          <table class="compare-table compact fragment fade-up">
+            <thead><tr><th>Comando</th><th>Descrição</th></tr></thead>
+            <tbody>
+              <tr><td><code>npm run test:smoke</code></td><td>Gate disponibilidade</td></tr>
+              <tr><td><code>npm run test:smoke:ui</code></td><td>Smoke + dashboard HTML</td></tr>
+              <tr><td><code>npm run test:load:mixed</code></td><td>Tráfego misto realista</td></tr>
+              <tr><td><code>npm run test:stress</code></td><td>Breakpoint / stress</td></tr>
+              <tr><td><code>npm run test:spike</code></td><td>Pico súbito</td></tr>
+              <tr><td><code>npm run test:soak</code></td><td>Endurance (30 min)</td></tr>
+              <tr><td><code>npm run test:report</code></td><td>Suite + REPORT.md</td></tr>
+              <tr><td><code>npm run slides</code></td><td>Esta apresentação</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- CTA -->
+        <section class="slide-cta">
+          <h2>Próximos passos</h2>
+          <p>Você já sabe instalar k6, configurar SLOs e rodar performance no TestFlow.</p>
+          <div class="links">
+            <a class="link-card fragment fade-up" href="https://grafana.com/docs/k6/latest/" target="_blank" rel="noopener">
+              <strong>📚 Documentação k6</strong>
+              grafana.com/docs/k6
+            </a>
+            <a class="link-card fragment fade-up" href="https://grafana.com/docs/k6/latest/results-output/web-dashboard/" target="_blank" rel="noopener">
+              <strong>📊 Web Dashboard</strong>
+              HTML report oficial
+            </a>
+            <a class="link-card fragment fade-up" href="https://github.com/lflucasferreira/testflow-k6" target="_blank" rel="noopener">
+              <strong>🐙 testflow-k6</strong>
+              Repositório do projeto
+            </a>
+            <a class="link-card fragment fade-up" href="../../README.md">
+              <strong>📋 README</strong>
+              Como rodar e CI
+            </a>
+          </div>
+          <p class="fragment fade-up badge" style="margin-top: 2em;">
+            ← → slides &nbsp;|&nbsp; ↓ ↑ sub-slides &nbsp;|&nbsp; F tela cheia &nbsp;|&nbsp; ESC overview
+          </p>
+        </section>
+
+      </div>
+    </div>
+
+    <script src="../../node_modules/reveal.js/dist/reveal.js"></script>
+    <script src="../../node_modules/reveal.js/plugin/highlight/highlight.js"></script>
+    <script>
+      const isPrintPdf = window.location.search.match(/print-pdf/gi)
+
+      Reveal.initialize({
+        hash: true,
+        slideNumber: 'c/t',
+        progress: true,
+        controls: true,
+        center: true,
+        transition: 'slide',
+        transitionSpeed: 'default',
+        backgroundTransition: 'fade',
+        width: 1280,
+        height: 720,
+        margin: 0.08,
+        pdfMaxPagesPerSlide: 1,
+        pdfSeparateFragments: false,
+        plugins: [RevealHighlight],
+      }).then(() => {
+        if (isPrintPdf) {
+          document.querySelectorAll('.fragment').forEach((el) => {
+            el.classList.add('visible', 'current-fragment')
+          })
+        }
+      })
+    </script>
+  </body>
+</html>

@@ -5,9 +5,12 @@
   "description": "k6 performance and load testing for TestFlow web app",
   "scripts": {
     "test:smoke": "bash scripts/run-k6.sh run scenarios/smoke/api-health.js",
+    "test:smoke:ui": "K6_DASHBOARD=true K6_SCENARIO=smoke bash scripts/run-k6.sh run scenarios/smoke/api-health.js",
     "test:load:auth": "bash scripts/run-k6.sh run scenarios/load/api-auth.js",
+    "test:load:auth:ui": "K6_DASHBOARD=true K6_SCENARIO=load-auth bash scripts/run-k6.sh run scenarios/load/api-auth.js",
     "test:load:users": "bash scripts/run-k6.sh run scenarios/load/api-users.js",
     "test:load:mixed": "bash scripts/run-k6.sh run scenarios/load/mixed-traffic.js",
+    "test:load:mixed:ui": "K6_DASHBOARD=true K6_SCENARIO=mixed-traffic bash scripts/run-k6.sh run scenarios/load/mixed-traffic.js",
     "test:stress": "bash scripts/run-k6.sh run scenarios/stress/api-breakpoint.js",
     "test:spike": "bash scripts/run-k6.sh run scenarios/spike/api-spike.js",
     "test:soak": "bash scripts/run-k6.sh run scenarios/soak/api-endurance.js",
@@ -16,15 +19,23 @@
     "test:browser:login": "bash scripts/run-k6.sh run --browser scenarios/browser/login-page.js",
     "test:ci": "bash scripts/run-k6.sh run --summary-export=results/summary.json scenarios/smoke/api-health.js",
     "test:report": "bash scripts/run-all-smoke-report.sh",
+    "report:open": "bash scripts/open-report.sh",
     "docker:up": "docker compose --profile stack up -d testflow",
     "docker:down": "docker compose --profile stack down",
     "docker:smoke": "docker compose --profile k6 run --rm k6 run scenarios/smoke/api-health.js",
     "docker:smoke:host": "docker run --rm -v \"${PWD}:/scripts\" -w /scripts -e BASE_URL=http://host.docker.internal:5050 grafana/k6:1.0.0 run scenarios/smoke/api-health.js",
     "docker:load": "docker compose --profile k6 run --rm -e K6_PROFILE=load k6 run scenarios/load/mixed-traffic.js",
-    "docker:stress": "docker compose --profile k6 run --rm -e K6_PROFILE=stress k6 run scenarios/stress/api-breakpoint.js"
+    "docker:stress": "docker compose --profile k6 run --rm -e K6_PROFILE=stress k6 run scenarios/stress/api-breakpoint.js",
+    "slides": "npx serve . -p 3337",
+    "slides:open": "npx serve . -p 3337 & sleep 1 && open http://localhost:3337/docs/slides/",
+    "slides:pdf": "node scripts/export-slides-pdf.mjs"
   },
   "devDependencies": {
-    "@types/k6": "^1.0.0"
+    "@types/k6": "^1.0.0",
+    "decktape": "^3.16.1",
+    "highlight.js": "^11.11.1",
+    "reveal.js": "^5.1.0",
+    "serve": "^14.2.4"
   },
   "engines": {
     "node": ">=20"
