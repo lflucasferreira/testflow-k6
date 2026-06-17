@@ -28,6 +28,7 @@
     "docker:stress": "docker compose --profile k6 run --rm -e K6_PROFILE=stress k6 run scenarios/stress/api-breakpoint.js",
     "slides": "npx serve . -p 3337",
     "slides:open": "npx serve . -p 3337 & sleep 1 && open http://localhost:3337/docs/slides/",
+    "docs:open": "npx serve docs -p 3338 & sleep 1 && open http://localhost:3338/",
     "slides:pdf": "node scripts/export-slides-pdf.mjs"
   },
   "devDependencies": {

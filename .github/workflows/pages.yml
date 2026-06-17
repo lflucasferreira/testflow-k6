@@ -43,7 +43,7 @@ jobs:
       - name: Verify TestFlow is reachable
         run: curl -sf http://localhost:5050/health && echo "TestFlow OK"
 
-      - name: Run full smoke-profile report suite
+      - name: Build site (docs hub + performance report)
         env:
           CI: "true"
           BASE_URL: http://localhost:5050
@@ -51,14 +51,16 @@ jobs:
           DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_RUN_ID: ${{ github.run_id }}
-          REPORT_OUTPUT_DIR: site
+          REPORT_OUTPUT_DIR: site/report
         run: |
-          mkdir -p results site
+          mkdir -p site/report results
+          cp -R docs/. site/
           npm run test:report || true
-          if [ ! -f site/index.html ]; then
+          if [ ! -f site/report/index.html ]; then
             echo "HTML report was not generated" >&2
             exit 1
           fi
+          touch site/.nojekyll
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

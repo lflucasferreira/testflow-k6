@@ -2,7 +2,8 @@
 
 k6 performance and load testing suite for [TestFlow](https://github.com/qaschoolbr/testflow) — complements functional automation in `testflow-cypress`, `testflow-playwright`, and `testflow-pytest`.
 
-**Live report (GitHub Pages):** https://lflucasferreira.github.io/testflow-k6/
+**Live hub (GitHub Pages):** https://lflucasferreira.github.io/testflow-k6/  
+**Performance report:** https://lflucasferreira.github.io/testflow-k6/report/
 
 ## Description
 
@@ -107,10 +108,14 @@ testflow-k6/
 │   ├── soak/         # Endurance
 │   └── browser/      # k6 browser module
 ├── journeys/         # Multi-step user flows
+├── docs/             # GitHub Pages hub (index.html, slides/)
+│   ├── index.html    # Landing — links to report & slides
+│   └── slides/       # Reveal.js training deck
 ├── results/          # REPORT.md, JSON summaries, HTML report (partially tracked)
-├── .github/workflows/
-│   ├── k6.yml        # CI smoke gate + manual load
-│   └── pages.yml     # GitHub Pages HTML report
+├── docker-compose.yml
+└── .github/workflows/
+    ├── k6.yml        # CI smoke gate + manual load
+    └── pages.yml     # Hub + performance report → GitHub Pages
 ```
 
 ## Prerequisites
@@ -313,9 +318,46 @@ Workflows:
 
 Set repository secret `DEMO_PASSWORD` for CI (same as Cypress/Playwright).
 
-**Enable GitHub Pages:** repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+### GitHub Pages
 
-Published URL: https://lflucasferreira.github.io/testflow-k6/
+The site is a **hub + CI-generated report**, not static files on `main` alone:
+
+| URL | Content |
+|-----|---------|
+| `/` | Landing page — `docs/index.html` |
+| `/report/` | Performance dashboard — generated after k6 runs in CI |
+| `/slides/` | Reveal.js training deck |
+
+**One-time setup:**
+
+1. Open the repo on GitHub → **Settings** → **Pages**
+2. Under **Build and deployment**, set **Source** to **GitHub Actions** (not “Deploy from branch”)
+3. Add secret **`DEMO_PASSWORD`** under **Settings → Secrets and variables → Actions** (value: `Demo123!` or your TestFlow password)
+4. Push to `main` — workflow **Deploy Performance Report** (`pages.yml`) runs automatically
+5. First run may ask to create the **`github-pages`** environment — approve it when prompted
+
+**Verify:**
+
+- **Actions** tab → **Deploy Performance Report** → green check on both jobs (`report` + `deploy`)
+- Open https://lflucasferreira.github.io/testflow-k6/ — hub with cards
+- Click **Performance Report** → `/report/` with PASS/FAIL per scenario
+
+**Manual re-deploy:** Actions → **Deploy Performance Report** → **Run workflow**.
+
+**Local preview (hub only):**
+
+```bash
+npx serve docs -p 3338
+# http://localhost:3338/
+```
+
+**Local preview (hub + report):**
+
+```bash
+npm run test:report
+mkdir -p docs/report && cp -R results/report/* docs/report/
+npx serve docs -p 3338
+```
 
 ## Technologies Used
 

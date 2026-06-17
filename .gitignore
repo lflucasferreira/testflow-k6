@@ -10,5 +10,6 @@ results/runs/*
 results/report/
 results/report*.html
 site/
+docs/report/
 *.log
 .DS_Store
