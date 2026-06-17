@@ -513,6 +513,29 @@ k6 run script.js</code></pre>
               <li><code>npm run report:open</code> reabre o último report</li>
             </ul>
           </section>
+
+          <section>
+            <h2>Report CI — GitHub Pages</h2>
+            <p class="fragment fade-up" style="font-size: 0.72em;">
+              A cada push em <code>main</code>, o workflow <code>pages.yml</code> roda a suíte de 7 cenários
+              e publica o dashboard HTML.
+            </p>
+            <ul class="fragment fade-up" style="font-size: 0.68em;">
+              <li><a href="https://lflucasferreira.github.io/testflow-k6/report/" target="_blank" rel="noopener"><strong>Performance report</strong></a> — PASS/FAIL, ramp-up, latência, checks</li>
+              <li><a href="https://lflucasferreira.github.io/testflow-k6/" target="_blank" rel="noopener">Hub</a> · <code>npm run test:report</code> localmente</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Grafana + InfluxDB (tempo real)</h2>
+            <pre class="fragment fade-up"><code class="language-bash">npm run grafana:up
+npm run test:smoke:grafana</code></pre>
+            <ul class="fragment fade-up" style="font-size: 0.68em;">
+              <li>Dashboard: <a href="http://localhost:3000/d/4sk8QaJVx/k6-test-results" target="_blank" rel="noopener"><strong>K6 Test Results</strong></a> (local)</li>
+              <li>VUs, req/s e latência em tempo real via InfluxDB v2</li>
+              <li><code>npm run grafana:down</code> para parar o stack</li>
+            </ul>
+          </section>
         </section>
 
         <!-- Journeys -->
@@ -697,6 +720,14 @@ sleep(thinkTime(0.5, 2))  // pausa entre iterações</code></pre>
           <h2>Próximos passos</h2>
           <p>Você já sabe instalar k6, configurar SLOs e rodar performance no TestFlow.</p>
           <div class="links">
+            <a class="link-card fragment fade-up" href="https://lflucasferreira.github.io/testflow-k6/report/" target="_blank" rel="noopener">
+              <strong>📊 Performance report</strong>
+              GitHub Pages — CI dashboard
+            </a>
+            <a class="link-card fragment fade-up" href="http://localhost:3000/d/4sk8QaJVx/k6-test-results" target="_blank" rel="noopener">
+              <strong>📈 Grafana live</strong>
+              K6 Test Results (local)
+            </a>
             <a class="link-card fragment fade-up" href="https://grafana.com/docs/k6/latest/" target="_blank" rel="noopener">
               <strong>📚 Documentação k6</strong>
               grafana.com/docs/k6

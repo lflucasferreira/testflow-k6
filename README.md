@@ -83,7 +83,7 @@ Runs **7 scenarios** with `K6_PROFILE=smoke` (fast, ~4 min total):
 Generates:
 
 - `results/REPORT.md` — Markdown summary
-- `results/report/index.html` — HTML dashboard with **PASS/FAIL** per scenario, checks, and thresholds
+- `results/report/index.html` — HTML dashboard with **PASS/FAIL**, charts (ramp-up, latency percentiles, throughput), checks, and thresholds — published at https://lflucasferreira.github.io/testflow-k6/report/
 - `results/summary-latest.json` — machine-readable summary
 - `results/runs/<run-id>-*.json` — raw k6 exports
 
@@ -112,6 +112,11 @@ testflow-k6/
 │   ├── index.html    # Landing — links to report & slides
 │   └── slides/       # Reveal.js training deck
 ├── results/          # REPORT.md, JSON summaries, HTML report (partially tracked)
+├── monitoring/       # Grafana + InfluxDB provisioning (profile: monitoring)
+│   ├── grafana/      # Datasource + k6 dashboard JSON (Grafana import)
+│   └── influxdb/     # k6 dashboard YAML (influx apply) + JSON (UI import)
+├── docker/
+│   └── k6-influx.Dockerfile  # xk6 + influxdb output extension
 ├── docker-compose.yml
 └── .github/workflows/
     ├── k6.yml        # CI smoke gate + manual load
@@ -257,6 +262,45 @@ npm run report:open
 
 During the run, open **http://localhost:5665** for real-time graphs. When the test ends, the HTML file opens automatically (or run `npm run report:open`).
 
+### Real-time Grafana + InfluxDB (local)
+
+Stream live metrics (VUs, req/s, latency) to **Grafana** via **InfluxDB v2** — same pattern as [this k6 + Grafana guide](https://medium.com/@indraaristya/real-time-report-of-k6-performance-test-feb1ed6ef374), using the official [xk6-output-influxdb](https://github.com/grafana/xk6-output-influxdb) extension.
+
+**Requires Docker.** Not used in CI smoke gate or GitHub Pages (local/manual load only).
+
+```bash
+# 1. Start TestFlow + InfluxDB + Grafana (builds k6-influx image on first run)
+npm run grafana:up
+
+# 2. Run smoke with live metrics → open Grafana (default http://localhost:3000)
+npm run test:smoke:grafana
+
+# Load test with real-time dashboard
+npm run test:load:mixed:grafana
+
+# Stop stack
+npm run grafana:down
+```
+
+| Service | URL | Notes |
+|---------|-----|-------|
+| Grafana | http://localhost:3000 | Dashboard: [K6 Test Results](http://localhost:3000/d/4sk8QaJVx/k6-test-results) — set `GRAFANA_PORT` if 3000 is busy |
+| InfluxDB | http://localhost:8086 | org `testflow`, bucket `k6` |
+| TestFlow | http://localhost:5050 | Same sandbox as other suites |
+
+Set `K6_INFLUXDB=true` on any `npm run test:*` script, or use the `:grafana` shortcuts above.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `K6_INFLUXDB` | — | Set to `true` to stream metrics to InfluxDB |
+| `K6_INFLUXDB_ORGANIZATION` | `testflow` | InfluxDB org |
+| `K6_INFLUXDB_BUCKET` | `k6` | InfluxDB bucket |
+| `K6_INFLUXDB_TOKEN` | `testflow-k6-dev-token` | Admin token (local dev only) |
+| `K6_INFLUXDB_ADDR` | `http://localhost:8086` | InfluxDB HTTP API |
+| `GRAFANA_PORT` | `3000` | Host port for Grafana UI |
+
+If TestFlow is already running on port 5050 (e.g. `testflow-dev`), `grafana:up` skips starting a duplicate container.
+
 ### Docker k6 runs
 
 ```bash
@@ -292,7 +336,7 @@ npm run test:report      # 7-scenario suite + HTML report
 npm run report:open      # open HTML in browser
 ```
 
-JSON summary: `results/summary-latest.json` · HTML: `results/report/index.html`
+JSON summary: `results/summary-latest.json` · HTML: [results/report/index.html](results/report/index.html) · [published report](https://lflucasferreira.github.io/testflow-k6/report/)
 
 ## SLO Thresholds
 
@@ -324,11 +368,36 @@ The site is a **hub + CI-generated report**, not static files on `main` alone:
 
 | URL | Content |
 |-----|---------|
-| `/` | Landing page — `docs/index.html` |
-| `/report/` | Performance dashboard — generated after k6 runs in CI |
-| `/slides/` | Reveal.js training deck |
+| `/` | [Landing page](https://lflucasferreira.github.io/testflow-k6/) — `docs/index.html` |
+| `/report/` | [Performance dashboard](https://lflucasferreira.github.io/testflow-k6/report/) — generated after k6 runs in CI |
+| `/grafana/` | [Grafana entry point](https://lflucasferreira.github.io/testflow-k6/grafana/) — redirects to CI report or embeds Grafana Cloud |
+| `/slides/` | [Reveal.js training deck](https://lflucasferreira.github.io/testflow-k6/slides/) |
 
-**One-time setup:**
+### Grafana on GitHub Pages
+
+**GitHub Pages is static** — InfluxDB and Grafana **do not run in CI** or on Pages. The CI workflow (`pages.yml`) does **not** start Docker Grafana; it generates the HTML performance report and publishes static files.
+
+What you get on Pages today:
+
+| Entry | URL | What it shows |
+|-------|-----|---------------|
+| Landing card **Grafana Dashboard** | `/grafana/` | Redirects to `/report/` (CI charts for 7 scenarios) |
+| **Performance Report** | `/report/` | PASS/FAIL, ramp-up, latency, checks — updated every push |
+
+**Optional — embed real Grafana (Grafana Cloud):** full guide → **[docs/grafana-cloud-setup.md](docs/grafana-cloud-setup.md)**
+
+1. Create a [Grafana Cloud](https://grafana.com/products/cloud/) stack (free tier).
+2. Stream k6 metrics to **InfluxDB Cloud** (same `xk6-output-influxdb` output; use cloud URL + token).
+3. Import `monitoring/grafana/dashboards/xk6-output-influxdb-dashboard.json` and map the **InfluxDB** datasource on import.
+4. **Optional — InfluxDB native dashboard:** full guide → **[docs/influxdb-cloud-dashboard.md](docs/influxdb-cloud-dashboard.md)** (`npm run influx:template:apply`).
+5. In the repo → **Settings → Secrets and variables → Actions → Variables**, add:
+   - `GRAFANA_DASHBOARD_URL` — public dashboard URL (e.g. `https://yourstack.grafana.net/d/4sk8QaJVx/k6-test-results`)
+   - `GRAFANA_EMBED` — `true` (iframe on `/grafana/`) or `false` (redirect only)
+6. Push to `main` — `/grafana/` will embed or link to your Grafana Cloud dashboard.
+
+Without `GRAFANA_DASHBOARD_URL`, `/grafana/` explains the limitation and redirects to the CI HTML report.
+
+**Local live stack** (Docker InfluxDB + Grafana): see [Real-time Grafana + InfluxDB (local)](#real-time-grafana--influxdb-local) — not available on Pages.
 
 1. Open the repo on GitHub → **Settings** → **Pages**
 2. Under **Build and deployment**, set **Source** to **GitHub Actions** (not “Deploy from branch”)
@@ -340,6 +409,7 @@ The site is a **hub + CI-generated report**, not static files on `main` alone:
 
 - **Actions** tab → **Deploy Performance Report** → green check on both jobs (`report` + `deploy`)
 - Open https://lflucasferreira.github.io/testflow-k6/ — hub with cards
+- Click **Grafana Dashboard** → `/grafana/` → CI report (or Grafana Cloud if configured)
 - Click **Performance Report** → `/report/` with PASS/FAIL per scenario
 
 **Manual re-deploy:** Actions → **Deploy Performance Report** → **Run workflow**.

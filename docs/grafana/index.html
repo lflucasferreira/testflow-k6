@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Grafana Dashboard — testflow-k6</title>
+    <link rel="icon" href="../slides/assets/k6-logo.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        --accent: #7d64ff;
+        --bg: #0f1419;
+        --surface: #1a2332;
+        --border: #2d3a4d;
+        --text: #e8edf4;
+        --muted: #8b9cb0;
+        --pass: #3dd68c;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 1.5rem;
+        height: 52px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(15, 20, 25, 0.95);
+      }
+      header a { color: var(--muted); text-decoration: none; font-size: 0.875rem; }
+      header a:hover { color: var(--accent); }
+      .brand { font-weight: 700; color: var(--text); }
+      .panel {
+        max-width: 640px;
+        margin: 4rem auto;
+        padding: 2rem;
+        text-align: center;
+      }
+      .panel h1 { font-size: 1.5rem; margin: 0 0 0.75rem; }
+      .panel p { color: var(--muted); line-height: 1.7; margin: 0 0 1.25rem; }
+      .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
+      .btn {
+        display: inline-block;
+        padding: 0.65rem 1.1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        text-decoration: none;
+        border: 1px solid var(--border);
+        color: var(--text);
+        background: var(--surface);
+      }
+      .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+      .btn:hover { opacity: 0.92; }
+      .frame-wrap {
+        flex: 1;
+        display: none;
+        flex-direction: column;
+        min-height: calc(100vh - 52px);
+      }
+      .frame-wrap.active { display: flex; }
+      iframe {
+        flex: 1;
+        width: 100%;
+        border: 0;
+        background: #111;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 0.72rem;
+        color: var(--pass);
+        border: 1px solid rgba(61, 214, 140, 0.35);
+        border-radius: 999px;
+        padding: 0.15rem 0.55rem;
+        margin-bottom: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="../">← testflow-k6</a>
+      <nav>
+        <a href="../report/">CI report</a>
+        <a href="https://github.com/lflucasferreira/testflow-k6/blob/main/docs/grafana-cloud-setup.md" target="_blank" rel="noopener">Setup</a>
+      </nav>
+    </header>
+
+    <section class="panel" id="fallback">
+      <span class="badge">Loading dashboard…</span>
+      <h1>Grafana Dashboard</h1>
+      <p id="message">Checking configuration…</p>
+      <div class="actions" id="actions" hidden>
+        <a class="btn primary" id="report-link" href="../report/">Open CI Performance Report</a>
+        <a class="btn" href="../">Back to hub</a>
+      </div>
+    </section>
+
+    <section class="frame-wrap" id="embed" hidden>
+      <iframe id="grafana-frame" title="Grafana dashboard" allow="fullscreen"></iframe>
+    </section>
+
+    <script>
+      (async function () {
+        const fallback = document.getElementById('fallback');
+        const embed = document.getElementById('embed');
+        const message = document.getElementById('message');
+        const actions = document.getElementById('actions');
+        const frame = document.getElementById('grafana-frame');
+        const reportUrl = '../report/';
+        const pagesReport = 'https://lflucasferreira.github.io/testflow-k6/report/';
+
+        let config = { mode: 'report' };
+
+        try {
+          const res = await fetch('dashboard-url.json', { cache: 'no-store' });
+          if (res.ok) config = await res.json();
+        } catch (_) {
+          /* use default report fallback */
+        }
+
+        if (config.mode === 'grafana' && config.url) {
+          if (config.embed !== false) {
+            fallback.hidden = true;
+            embed.hidden = false;
+            embed.classList.add('active');
+            frame.src = config.url;
+            return;
+          }
+          window.location.replace(config.url);
+          return;
+        }
+
+        document.querySelector('.badge').textContent = 'CI · static dashboard';
+        message.innerHTML =
+          'GitHub Pages serves <strong>static files</strong> — InfluxDB and Grafana cannot run on Pages. ' +
+          'The CI workflow publishes an HTML dashboard with charts for all 7 scenarios. ' +
+          'For live Grafana, use <code>npm run grafana:up</code> locally or configure Grafana Cloud (see README).';
+        actions.hidden = false;
+        document.getElementById('report-link').href = reportUrl;
+
+        if (config.autoRedirect !== false) {
+          setTimeout(() => {
+            window.location.replace(reportUrl);
+          }, 4000);
+          message.innerHTML += '<br><br>Redirecting to the CI report in 4 seconds…';
+        }
+      })();
+    </script>
+  </body>
+</html>

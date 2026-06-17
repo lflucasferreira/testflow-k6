@@ -1,9 +1,11 @@
 # testflow-k6 Performance Report
 
+**Live HTML report:** https://lflucasferreira.github.io/testflow-k6/report/
+
 **Run ID:** `2026-06-16T23-16-29Z`  
 **Target:** `http://localhost:5050`  
 **Profile:** `smoke`  
-**Generated:** 2026-06-17T01:04:24.646Z
+**Generated:** 2026-06-17T02:10:24.195Z
 
 ## Summary
 

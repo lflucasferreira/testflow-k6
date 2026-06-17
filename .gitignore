@@ -1,5 +1,6 @@
 node_modules/
 .env
+.env.influx.cloud
 results/*
 !results/.gitkeep
 !results/REPORT.md

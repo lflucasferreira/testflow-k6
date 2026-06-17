@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import { SCENARIO_CATALOG, THRESHOLD_PROFILES } from './scenario-catalog.mjs';
+import { SCENARIO_CATALOG, THRESHOLD_PROFILES, PROFILE_STAGES } from './scenario-catalog.mjs';
 
 const runId = process.argv[2];
 if (!runId) {
@@ -12,6 +12,8 @@ if (!runId) {
 const cwd = process.cwd();
 const runsDir = path.join(cwd, 'results', 'runs');
 const outputDir = process.env.REPORT_OUTPUT_DIR || path.join(cwd, 'results', 'report');
+const PAGES_HUB_URL = 'https://lflucasferreira.github.io/testflow-k6/';
+const PAGES_REPORT_URL = 'https://lflucasferreira.github.io/testflow-k6/report/';
 const files = fs.readdirSync(runsDir).filter((f) => f.startsWith(runId) && f.endsWith('.json'));
 
 function metricValue(metrics, name, field) {
@@ -122,6 +124,62 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;');
 }
 
+function parseDuration(str) {
+  const match = String(str).match(/^(\d+(?:\.\d+)?)(s|m|h)$/);
+  if (!match) return 0;
+  const value = Number(match[1]);
+  if (match[2] === 'm') return value * 60;
+  if (match[2] === 'h') return value * 3600;
+  return value;
+}
+
+function formatDurationLabel(totalSeconds) {
+  if (totalSeconds >= 60) {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = Math.round(totalSeconds % 60);
+    return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+  }
+  return `${Math.round(totalSeconds)}s`;
+}
+
+function effectiveProfileKey() {
+  const base = process.env.K6_PROFILE || 'smoke';
+  if (process.env.CI === 'true' && base === 'smoke') return 'ci';
+  return base;
+}
+
+function buildRampSeries(stages) {
+  if (!stages?.length) return { labels: ['0s'], vus: [0] };
+
+  const labels = ['0s'];
+  const vus = [0];
+  let elapsed = 0;
+
+  for (const stage of stages) {
+    elapsed += parseDuration(stage.duration);
+    labels.push(formatDurationLabel(elapsed));
+    vus.push(stage.target);
+  }
+
+  return { labels, vus };
+}
+
+function latencyBreakdown(metrics) {
+  const metric = metrics?.http_req_duration;
+  if (!metric) return null;
+
+  const pick = (key) => metric[key] ?? metric.values?.[key] ?? null;
+
+  return {
+    min: pick('min'),
+    med: pick('med'),
+    avg: pick('avg'),
+    p90: pick('p(90)'),
+    p95: pick('p(95)'),
+    max: pick('max'),
+  };
+}
+
 const rows = files.map((file) => {
   const suite = file.replace(`${runId}-`, '').replace('.json', '');
   const { code: exitCode, exists: exitFileExists } = readExitCode(suite);
@@ -149,6 +207,9 @@ const rows = files.map((file) => {
     checks: checksRate,
   });
 
+  const profileKey = effectiveProfileKey();
+  const rampStages = PROFILE_STAGES[profileKey] ?? PROFILE_STAGES.smoke;
+
   return {
     suite,
     passed,
@@ -162,6 +223,10 @@ const rows = files.map((file) => {
     iterations: metricValue(metrics, 'iterations', 'count'),
     vusMax: metricValue(metrics, 'vus_max', 'max'),
     httpCount: metricValue(metrics, 'http_reqs', 'count'),
+    httpRate: metricValue(metrics, 'http_reqs', 'rate'),
+    latency: latencyBreakdown(metrics),
+    ramp: buildRampSeries(rampStages),
+    profileKey,
     checksDetail: checks,
     thresholds,
     missing: !raw,
@@ -183,6 +248,7 @@ const workflowRun = process.env.GITHUB_RUN_ID ?? 'local';
 const md = [
   '# testflow-k6 Performance Report',
   '',
+  `**Live HTML report:** ${PAGES_REPORT_URL}  `,
   `**Run ID:** \`${runId}\`  `,
   `**Target:** \`${baseUrl}\`  `,
   `**Profile:** \`${profile}\`  `,
@@ -267,11 +333,29 @@ console.log(`Generated results/REPORT.md`);
 console.log(`Generated ${path.join(outputDir, 'index.html')}`);
 
 function buildHtml(ctx) {
+  const chartPayload = {
+    overview: {
+      suites: ctx.rows.map((r) => r.suite),
+      p95: ctx.rows.map((r) => r.p95 ?? 0),
+      vusMax: ctx.rows.map((r) => r.vusMax ?? 0),
+      httpRate: ctx.rows.map((r) => r.httpRate ?? 0),
+    },
+    scenarios: ctx.rows.map((r) => ({
+      suite: r.suite,
+      ramp: r.ramp,
+      latency: r.latency,
+      checksPass: r.checksDetail.reduce((n, c) => n + c.passes, 0),
+      checksFail: r.checksDetail.reduce((n, c) => n + c.fails, 0),
+      profileKey: r.profileKey,
+    })),
+  };
+
   const scenarioCards = ctx.rows
     .map((row) => {
       const meta = row.meta;
       const statusClass = row.passed ? 'pass' : 'fail';
       const statusLabel = row.passed ? 'PASS' : 'FAIL';
+      const safeId = row.suite.replace(/[^a-z0-9-]/gi, '-');
 
       const checksHtml = row.checksDetail.length
         ? `<ul class="check-list">${row.checksDetail
@@ -310,6 +394,16 @@ function buildHtml(ctx) {
             <div><span>checks</span><strong>${formatRate(row.checks)}</strong></div>
             <div><span>exit code</span><strong>${row.exitCode}</strong></div>
           </div>
+          <div class="charts">
+            <div class="chart-box">
+              <h4>Load profile — ramp-up <span class="chart-sub">(${escapeHtml(row.profileKey)})</span></h4>
+              <canvas id="chart-ramp-${safeId}" height="180"></canvas>
+            </div>
+            <div class="chart-box">
+              <h4>HTTP latency percentiles</h4>
+              <canvas id="chart-latency-${safeId}" height="180"></canvas>
+            </div>
+          </div>
           <details>
             <summary>Checks (${row.checksDetail.filter((c) => c.ok).length}/${row.checksDetail.length} ok)</summary>
             ${checksHtml}
@@ -332,12 +426,15 @@ function buildHtml(ctx) {
     )
     .join('');
 
+  const chartJson = JSON.stringify(chartPayload).replace(/</g, '\\u003c');
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>testflow-k6 Performance Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
   <style>
     :root {
       --bg: #0f1419;
@@ -365,6 +462,15 @@ function buildHtml(ctx) {
     }
     .hero h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
     .hero p { margin: 0.2rem 0; color: var(--muted); font-size: 0.95rem; }
+    .hero-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+    }
+    .hero-nav a { color: var(--accent); text-decoration: none; }
+    .hero-nav a:hover { text-decoration: underline; }
     .summary {
       display: flex;
       flex-wrap: wrap;
@@ -386,6 +492,40 @@ function buildHtml(ctx) {
     .stat.total strong { color: var(--accent); }
     main { padding: 1.5rem; max-width: 1100px; margin: 0 auto; }
     h2 { font-size: 1.2rem; margin: 0 0 1rem; color: var(--accent); }
+    .overview-charts {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .chart-box, .overview-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem 1rem;
+    }
+    .chart-box h4, .overview-box h4 {
+      margin: 0 0 0.75rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .chart-sub { color: var(--muted); font-weight: 400; }
+    .chart-note {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin: 0 0 1.5rem;
+      padding: 0.75rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
     .scenario {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -462,6 +602,11 @@ function buildHtml(ctx) {
       border-top: 1px solid var(--border);
       margin-top: 2rem;
     }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    @media (max-width: 768px) {
+      .charts, .overview-charts { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -469,6 +614,12 @@ function buildHtml(ctx) {
     <h1>testflow-k6 Performance Report</h1>
     <p>Run <code>${escapeHtml(ctx.runId)}</code> · Profile <code>${escapeHtml(ctx.profile)}</code> · Target <code>${escapeHtml(ctx.baseUrl)}</code></p>
     <p>Generated ${escapeHtml(ctx.generatedAt)} · Commit <code>${escapeHtml(ctx.commitSha)}</code> · Workflow <code>${escapeHtml(ctx.workflowRun)}</code></p>
+    <nav class="hero-nav" aria-label="Related links">
+      <a href="${PAGES_HUB_URL}">← Hub</a>
+      <a href="${PAGES_REPORT_URL}">Published report</a>
+      <a href="${PAGES_HUB_URL}slides/">Slides</a>
+      <a href="https://github.com/lflucasferreira/testflow-k6">GitHub</a>
+    </nav>
   </header>
 
   <section class="summary">
@@ -479,6 +630,22 @@ function buildHtml(ctx) {
   </section>
 
   <main>
+    <h2>Overview</h2>
+    <p class="chart-note">
+      Ramp-up charts show the <strong>configured load profile</strong> (VU targets per stage).
+      Latency charts use aggregated k6 metrics from each run.
+    </p>
+    <div class="overview-charts">
+      <div class="overview-box">
+        <h4>p95 latency — all scenarios</h4>
+        <canvas id="chart-overview-p95" height="200"></canvas>
+      </div>
+      <div class="overview-box">
+        <h4>HTTP throughput (req/s)</h4>
+        <canvas id="chart-overview-throughput" height="200"></canvas>
+      </div>
+    </div>
+
     <h2>Scenarios</h2>
     ${scenarioCards}
 
@@ -487,8 +654,119 @@ function buildHtml(ctx) {
   </main>
 
   <footer>
-    Grafana k6 · TestFlow sandbox · Auto-generated by testflow-k6 CI
+    <a href="${PAGES_HUB_URL}">testflow-k6 hub</a>
+    · <a href="${PAGES_REPORT_URL}">Performance report</a>
+    · <a href="${PAGES_HUB_URL}slides/">Slides</a>
+    · Grafana k6 · TestFlow sandbox · Auto-generated by CI
   </footer>
+
+  <script>
+    const REPORT_DATA = ${chartJson};
+    const COLORS = {
+      accent: '#7d64ff',
+      pass: '#3dd68c',
+      warn: '#ffc857',
+      muted: '#8b9cb0',
+      grid: '#2d3a4d',
+    };
+
+    Chart.defaults.color = COLORS.muted;
+    Chart.defaults.borderColor = COLORS.grid;
+    Chart.defaults.font.family = "ui-sans-serif, system-ui, sans-serif";
+
+    function chartOptions(extra = {}) {
+      return {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: COLORS.grid } },
+          y: { grid: { color: COLORS.grid }, beginAtZero: true },
+        },
+        ...extra,
+      };
+    }
+
+    new Chart(document.getElementById('chart-overview-p95'), {
+      type: 'bar',
+      data: {
+        labels: REPORT_DATA.overview.suites,
+        datasets: [{
+          label: 'p95 (ms)',
+          data: REPORT_DATA.overview.p95,
+          backgroundColor: COLORS.accent,
+          borderRadius: 4,
+        }],
+      },
+      options: chartOptions({
+        scales: { y: { title: { display: true, text: 'ms' } } },
+      }),
+    });
+
+    new Chart(document.getElementById('chart-overview-throughput'), {
+      type: 'bar',
+      data: {
+        labels: REPORT_DATA.overview.suites,
+        datasets: [{
+          label: 'req/s',
+          data: REPORT_DATA.overview.httpRate,
+          backgroundColor: COLORS.pass,
+          borderRadius: 4,
+        }],
+      },
+      options: chartOptions({
+        scales: { y: { title: { display: true, text: 'req/s' } } },
+      }),
+    });
+
+    for (const scenario of REPORT_DATA.scenarios) {
+      const safeId = scenario.suite.replace(/[^a-z0-9-]/gi, '-');
+
+      new Chart(document.getElementById('chart-ramp-' + safeId), {
+        type: 'line',
+        data: {
+          labels: scenario.ramp.labels,
+          datasets: [{
+            label: 'VUs',
+            data: scenario.ramp.vus,
+            borderColor: COLORS.accent,
+            backgroundColor: 'rgba(125, 100, 255, 0.15)',
+            fill: true,
+            stepped: 'after',
+            tension: 0,
+            pointRadius: 3,
+          }],
+        },
+        options: chartOptions({
+          scales: {
+            x: { title: { display: true, text: 'time' } },
+            y: { title: { display: true, text: 'VUs' }, ticks: { stepSize: 1 } },
+          },
+        }),
+      });
+
+      const lat = scenario.latency || {};
+      const latLabels = ['min', 'med', 'avg', 'p90', 'p95', 'max'];
+      const latValues = latLabels.map((k) => lat[k] ?? 0);
+
+      new Chart(document.getElementById('chart-latency-' + safeId), {
+        type: 'bar',
+        data: {
+          labels: latLabels,
+          datasets: [{
+            label: 'ms',
+            data: latValues,
+            backgroundColor: [COLORS.pass, COLORS.pass, COLORS.accent, COLORS.accent, COLORS.warn, COLORS.warn],
+            borderRadius: 4,
+          }],
+        },
+        options: chartOptions({
+          indexAxis: 'y',
+          scales: { x: { title: { display: true, text: 'ms' } } },
+        }),
+      });
+    }
+  </script>
 </body>
 </html>`;
 }

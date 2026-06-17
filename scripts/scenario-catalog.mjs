@@ -139,6 +139,45 @@ export const SCENARIO_CATALOG = {
   },
 };
 
+/** Load profile stages — mirrors config/profiles.js for report charts */
+export const PROFILE_STAGES = {
+  smoke: [
+    { duration: '10s', target: 2 },
+    { duration: '20s', target: 2 },
+    { duration: '5s', target: 0 },
+  ],
+  ci: [
+    { duration: '15s', target: 3 },
+    { duration: '30s', target: 5 },
+    { duration: '10s', target: 0 },
+  ],
+  load: [
+    { duration: '1m', target: 10 },
+    { duration: '3m', target: 25 },
+    { duration: '2m', target: 25 },
+    { duration: '1m', target: 0 },
+  ],
+  stress: [
+    { duration: '2m', target: 20 },
+    { duration: '3m', target: 50 },
+    { duration: '3m', target: 80 },
+    { duration: '2m', target: 100 },
+    { duration: '2m', target: 0 },
+  ],
+  spike: [
+    { duration: '30s', target: 5 },
+    { duration: '10s', target: 100 },
+    { duration: '1m', target: 100 },
+    { duration: '10s', target: 5 },
+    { duration: '30s', target: 0 },
+  ],
+  soak: [
+    { duration: '2m', target: 15 },
+    { duration: '30m', target: 15 },
+    { duration: '2m', target: 0 },
+  ],
+};
+
 export const SHARED_CHECKS = [
   'health status 200',
   'health responds quickly (< 1s)',

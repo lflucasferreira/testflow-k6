@@ -1,0 +1,718 @@
+{
+  "meta": {
+    "version": "1",
+    "type": "dashboard",
+    "name": "K6 Test Results-Template",
+    "description": "k6 load test metrics from xk6-output-influxdb (testflow-k6)"
+  },
+  "content": {
+    "data": {
+      "type": "dashboard",
+      "attributes": {
+        "name": "K6 Test Results",
+        "description": "k6 metrics (bucket: k6) via xk6-output-influxdb"
+      },
+      "relationships": {
+        "label": {
+          "data": [
+            {
+              "type": "label",
+              "id": "35d5778055a393ac"
+            }
+          ]
+        },
+        "cell": {
+          "data": [
+            {
+              "type": "cell",
+              "id": "75a4c0c0f047888b"
+            },
+            {
+              "type": "cell",
+              "id": "7cac174e30c3b69d"
+            },
+            {
+              "type": "cell",
+              "id": "ce4915acf11dcca8"
+            },
+            {
+              "type": "cell",
+              "id": "9860ef67f993fdd0"
+            },
+            {
+              "type": "cell",
+              "id": "b4317f01a12dde7a"
+            },
+            {
+              "type": "cell",
+              "id": "e90fccb43004d79b"
+            },
+            {
+              "type": "cell",
+              "id": "eaed9e90f1c3caa5"
+            }
+          ]
+        },
+        "variable": {
+          "data": [
+            {
+              "type": "variable",
+              "id": "5ec0abefc4c492d3"
+            }
+          ]
+        }
+      }
+    },
+    "included": [
+      {
+        "type": "label",
+        "id": "35d5778055a393ac",
+        "attributes": {
+          "name": "k6",
+          "properties": {
+            "color": "#7a65f2",
+            "description": "testflow-k6 performance tests"
+          }
+        }
+      },
+      {
+        "id": "75a4c0c0f047888b",
+        "type": "cell",
+        "attributes": {
+          "x": 0,
+          "y": 0,
+          "w": 2,
+          "h": 3
+        },
+        "relationships": {
+          "view": {
+            "data": {
+              "type": "view",
+              "id": "75a4c0c0f047888b"
+            }
+          }
+        }
+      },
+      {
+        "id": "7cac174e30c3b69d",
+        "type": "cell",
+        "attributes": {
+          "x": 2,
+          "y": 0,
+          "w": 2,
+          "h": 3
+        },
+        "relationships": {
+          "view": {
+            "data": {
+              "type": "view",
+              "id": "7cac174e30c3b69d"
+            }
+          }
+        }
+      },
+      {
+        "id": "ce4915acf11dcca8",
+        "type": "cell",
+        "attributes": {
+          "x": 4,
+          "y": 0,
+          "w": 2,
+          "h": 3
+        },
+        "relationships": {
+          "view": {
+            "data": {
+              "type": "view",
+              "id": "ce4915acf11dcca8"
+            }
+          }
+        }
+      },
+      {
+        "id": "9860ef67f993fdd0",
+        "type": "cell",
+        "attributes": {
+          "x": 6,
+          "y": 0,
+          "w": 2,
+          "h": 3
+        },
+        "relationships": {
+          "view": {
+            "data": {
+              "type": "view",
+              "id": "9860ef67f993fdd0"
+            }
+          }
+        }
+      },
+      {
+        "id": "b4317f01a12dde7a",
+        "type": "cell",
+        "attributes": {
+          "x": 8,
+          "y": 0,
+          "w": 2,
+          "h": 3
+        },
+        "relationships": {
+          "view": {
+            "data": {
+              "type": "view",
+              "id": "b4317f01a12dde7a"
+            }
+          }
+        }
+      },
+      {
+        "id": "e90fccb43004d79b",
+        "type": "cell",
+        "attributes": {
+          "x": 10,
+          "y": 0,
+          "w": 2,
+          "h": 3
+        },
+        "relationships": {
+          "view": {
+            "data": {
+              "type": "view",
+              "id": "e90fccb43004d79b"
+            }
+          }
+        }
+      },
+      {
+        "id": "eaed9e90f1c3caa5",
+        "type": "cell",
+        "attributes": {
+          "x": 0,
+          "y": 3,
+          "w": 12,
+          "h": 5
+        },
+        "relationships": {
+          "view": {
+            "data": {
+              "type": "view",
+              "id": "eaed9e90f1c3caa5"
+            }
+          }
+        }
+      },
+      {
+        "type": "view",
+        "id": "75a4c0c0f047888b",
+        "attributes": {
+          "name": "Requests Made",
+          "properties": {
+            "shape": "chronograf-v2",
+            "type": "single-stat",
+            "queries": [
+              {
+                "text": "from(bucket: \"k6\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"http_reqs\")\n  |> filter(fn: (r) => r[\"testid\"] == v.testid)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> group(columns: [\"_measurement\"])\n  |> sum()\n  |> last()",
+                "editMode": "advanced",
+                "name": "",
+                "builderConfig": {
+                  "buckets": [],
+                  "tags": [
+                    {
+                      "key": "_measurement",
+                      "values": [],
+                      "aggregateFunctionType": "filter"
+                    }
+                  ],
+                  "functions": [
+                    {
+                      "name": "mean"
+                    }
+                  ],
+                  "aggregateWindow": {
+                    "period": "auto",
+                    "fillValues": false
+                  }
+                }
+              }
+            ],
+            "prefix": "",
+            "tickPrefix": "",
+            "suffix": "",
+            "tickSuffix": "",
+            "colors": [
+              {
+                "id": "base",
+                "type": "text",
+                "hex": "#00C9FF",
+                "name": "laser",
+                "value": 0
+              }
+            ],
+            "decimalPlaces": {
+              "isEnforced": true,
+              "digits": 2
+            },
+            "note": "",
+            "showNoteWhenEmpty": false
+          }
+        }
+      },
+      {
+        "type": "view",
+        "id": "7cac174e30c3b69d",
+        "attributes": {
+          "name": "HTTP Failures",
+          "properties": {
+            "shape": "chronograf-v2",
+            "type": "single-stat",
+            "queries": [
+              {
+                "text": "from(bucket: \"k6\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"http_req_failed\")\n  |> filter(fn: (r) => r[\"testid\"] == v.testid)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> group(columns: [\"_measurement\"])\n  |> sum()\n  |> last()",
+                "editMode": "advanced",
+                "name": "",
+                "builderConfig": {
+                  "buckets": [],
+                  "tags": [
+                    {
+                      "key": "_measurement",
+                      "values": [],
+                      "aggregateFunctionType": "filter"
+                    }
+                  ],
+                  "functions": [
+                    {
+                      "name": "mean"
+                    }
+                  ],
+                  "aggregateWindow": {
+                    "period": "auto",
+                    "fillValues": false
+                  }
+                }
+              }
+            ],
+            "prefix": "",
+            "tickPrefix": "",
+            "suffix": "",
+            "tickSuffix": "",
+            "colors": [
+              {
+                "id": "base",
+                "type": "text",
+                "hex": "#00C9FF",
+                "name": "laser",
+                "value": 0
+              }
+            ],
+            "decimalPlaces": {
+              "isEnforced": true,
+              "digits": 0
+            },
+            "note": "",
+            "showNoteWhenEmpty": false
+          }
+        }
+      },
+      {
+        "type": "view",
+        "id": "ce4915acf11dcca8",
+        "attributes": {
+          "name": "Peak RPS",
+          "properties": {
+            "shape": "chronograf-v2",
+            "type": "single-stat",
+            "queries": [
+              {
+                "text": "from(bucket: \"k6\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"http_reqs\")\n  |> filter(fn: (r) => r[\"testid\"] == v.testid)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> group()\n  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)\n  |> max()\n  |> last()",
+                "editMode": "advanced",
+                "name": "",
+                "builderConfig": {
+                  "buckets": [],
+                  "tags": [
+                    {
+                      "key": "_measurement",
+                      "values": [],
+                      "aggregateFunctionType": "filter"
+                    }
+                  ],
+                  "functions": [
+                    {
+                      "name": "mean"
+                    }
+                  ],
+                  "aggregateWindow": {
+                    "period": "auto",
+                    "fillValues": false
+                  }
+                }
+              }
+            ],
+            "prefix": "",
+            "tickPrefix": "",
+            "suffix": " req/s",
+            "tickSuffix": " req/s",
+            "colors": [
+              {
+                "id": "base",
+                "type": "text",
+                "hex": "#00C9FF",
+                "name": "laser",
+                "value": 0
+              }
+            ],
+            "decimalPlaces": {
+              "isEnforced": true,
+              "digits": 2
+            },
+            "note": "",
+            "showNoteWhenEmpty": false
+          }
+        }
+      },
+      {
+        "type": "view",
+        "id": "9860ef67f993fdd0",
+        "attributes": {
+          "name": "P95 Response Time",
+          "properties": {
+            "shape": "chronograf-v2",
+            "type": "single-stat",
+            "queries": [
+              {
+                "text": "from(bucket: \"k6\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"http_req_duration\")\n  |> filter(fn: (r) => r[\"testid\"] == v.testid)\n  |> filter(fn: (r) => r._field == \"value\")\n  |> group()\n  |> quantile(q: 0.95, method: \"exact_mean\")\n  |> last()",
+                "editMode": "advanced",
+                "name": "",
+                "builderConfig": {
+                  "buckets": [],
+                  "tags": [
+                    {
+                      "key": "_measurement",
+                      "values": [],
+                      "aggregateFunctionType": "filter"
+                    }
+                  ],
+                  "functions": [
+                    {
+                      "name": "mean"
+                    }
+                  ],
+                  "aggregateWindow": {
+                    "period": "auto",
+                    "fillValues": false
+                  }
+                }
+              }
+            ],
+            "prefix": "",
+            "tickPrefix": "",
+            "suffix": " ms",
+            "tickSuffix": " ms",
+            "colors": [
+              {
+                "id": "base",
+                "type": "text",
+                "hex": "#00C9FF",
+                "name": "laser",
+                "value": 0
+              }
+            ],
+            "decimalPlaces": {
+              "isEnforced": true,
+              "digits": 2
+            },
+            "note": "",
+            "showNoteWhenEmpty": false
+          }
+        }
+      },
+      {
+        "type": "view",
+        "id": "b4317f01a12dde7a",
+        "attributes": {
+          "name": "Data Received",
+          "properties": {
+            "shape": "chronograf-v2",
+            "type": "single-stat",
+            "queries": [
+              {
+                "text": "from(bucket: \"k6\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"data_received\")\n  |> filter(fn: (r) => r[\"testid\"] == v.testid)\n  |> filter(fn: (r) => r._field == \"value\")\n  |> group()\n  |> sum()\n  |> last()",
+                "editMode": "advanced",
+                "name": "",
+                "builderConfig": {
+                  "buckets": [],
+                  "tags": [
+                    {
+                      "key": "_measurement",
+                      "values": [],
+                      "aggregateFunctionType": "filter"
+                    }
+                  ],
+                  "functions": [
+                    {
+                      "name": "mean"
+                    }
+                  ],
+                  "aggregateWindow": {
+                    "period": "auto",
+                    "fillValues": false
+                  }
+                }
+              }
+            ],
+            "prefix": "",
+            "tickPrefix": "",
+            "suffix": " B",
+            "tickSuffix": " B",
+            "colors": [
+              {
+                "id": "base",
+                "type": "text",
+                "hex": "#00C9FF",
+                "name": "laser",
+                "value": 0
+              }
+            ],
+            "decimalPlaces": {
+              "isEnforced": true,
+              "digits": 2
+            },
+            "note": "",
+            "showNoteWhenEmpty": false
+          }
+        }
+      },
+      {
+        "type": "view",
+        "id": "e90fccb43004d79b",
+        "attributes": {
+          "name": "Data Sent",
+          "properties": {
+            "shape": "chronograf-v2",
+            "type": "single-stat",
+            "queries": [
+              {
+                "text": "from(bucket: \"k6\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"data_sent\")\n  |> filter(fn: (r) => r[\"testid\"] == v.testid)\n  |> filter(fn: (r) => r._field == \"value\")\n  |> group()\n  |> sum()\n  |> last()",
+                "editMode": "advanced",
+                "name": "",
+                "builderConfig": {
+                  "buckets": [],
+                  "tags": [
+                    {
+                      "key": "_measurement",
+                      "values": [],
+                      "aggregateFunctionType": "filter"
+                    }
+                  ],
+                  "functions": [
+                    {
+                      "name": "mean"
+                    }
+                  ],
+                  "aggregateWindow": {
+                    "period": "auto",
+                    "fillValues": false
+                  }
+                }
+              }
+            ],
+            "prefix": "",
+            "tickPrefix": "",
+            "suffix": " B",
+            "tickSuffix": " B",
+            "colors": [
+              {
+                "id": "base",
+                "type": "text",
+                "hex": "#00C9FF",
+                "name": "laser",
+                "value": 0
+              }
+            ],
+            "decimalPlaces": {
+              "isEnforced": true,
+              "digits": 2
+            },
+            "note": "",
+            "showNoteWhenEmpty": false
+          }
+        }
+      },
+      {
+        "type": "view",
+        "id": "eaed9e90f1c3caa5",
+        "attributes": {
+          "name": "VUs, Response Time & RPS",
+          "properties": {
+            "shape": "chronograf-v2",
+            "axes": {
+              "x": {
+                "bounds": [
+                  "",
+                  ""
+                ],
+                "label": "",
+                "prefix": "",
+                "suffix": "",
+                "base": "10",
+                "scale": "linear"
+              },
+              "y": {
+                "bounds": [
+                  "",
+                  ""
+                ],
+                "label": "",
+                "prefix": "",
+                "suffix": "",
+                "base": "10",
+                "scale": "linear"
+              }
+            },
+            "type": "xy",
+            "legend": {},
+            "geom": "line",
+            "colors": [
+              {
+                "id": "4b85c645-37e8-484c-b8c1-b9c24ade5298",
+                "type": "scale",
+                "hex": "#31C0F6",
+                "name": "Nineteen Eighty Four",
+                "value": 0
+              },
+              {
+                "id": "d9cfed2d-ade2-4e11-828c-25e71804dec3",
+                "type": "scale",
+                "hex": "#A500A5",
+                "name": "Nineteen Eighty Four",
+                "value": 0
+              },
+              {
+                "id": "b966ce10-9565-4f39-8862-d6c1019e4bc9",
+                "type": "scale",
+                "hex": "#FF7E27",
+                "name": "Nineteen Eighty Four",
+                "value": 0
+              }
+            ],
+            "queries": [
+              {
+                "text": "from(bucket: \"k6\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"http_req_duration\")\n  |> filter(fn: (r) => r[\"testid\"] == v.testid)\n  |> filter(fn: (r) => r._field == \"value\")\n  |> filter(fn: (r) => r.status == \"200\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"avg_response_ms\")",
+                "editMode": "advanced",
+                "name": "",
+                "builderConfig": {
+                  "buckets": [],
+                  "tags": [
+                    {
+                      "key": "_measurement",
+                      "values": [],
+                      "aggregateFunctionType": "filter"
+                    }
+                  ],
+                  "functions": [
+                    {
+                      "name": "mean"
+                    }
+                  ],
+                  "aggregateWindow": {
+                    "period": "auto",
+                    "fillValues": false
+                  }
+                }
+              },
+              {
+                "text": "from(bucket: \"k6\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vus\")\n  |> yield(name: \"active_vus\")",
+                "editMode": "advanced",
+                "name": "",
+                "builderConfig": {
+                  "buckets": [],
+                  "tags": [
+                    {
+                      "key": "_measurement",
+                      "values": [],
+                      "aggregateFunctionType": "filter"
+                    }
+                  ],
+                  "functions": [
+                    {
+                      "name": "mean"
+                    }
+                  ],
+                  "aggregateWindow": {
+                    "period": "auto",
+                    "fillValues": false
+                  }
+                }
+              },
+              {
+                "text": "from(bucket: \"k6\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"http_reqs\")\n  |> filter(fn: (r) => r[\"testid\"] == v.testid)\n  |> filter(fn: (r) => r[\"_field\"] == \"value\")\n  |> group(columns: [\"_measurement\"])\n  |> aggregateWindow(every: 1s, fn: sum, createEmpty: false)\n  |> yield(name: \"rps\")",
+                "editMode": "advanced",
+                "name": "",
+                "builderConfig": {
+                  "buckets": [],
+                  "tags": [
+                    {
+                      "key": "_measurement",
+                      "values": [],
+                      "aggregateFunctionType": "filter"
+                    }
+                  ],
+                  "functions": [
+                    {
+                      "name": "mean"
+                    }
+                  ],
+                  "aggregateWindow": {
+                    "period": "auto",
+                    "fillValues": false
+                  }
+                }
+              }
+            ],
+            "note": "",
+            "showNoteWhenEmpty": false,
+            "xColumn": "_time",
+            "generateXAxisTicks": [],
+            "xTotalTicks": 0,
+            "xTickStart": 0,
+            "xTickStep": 0,
+            "yColumn": "_value",
+            "generateYAxisTicks": [],
+            "yTotalTicks": 0,
+            "yTickStart": 0,
+            "yTickStep": 0,
+            "shadeBelow": false,
+            "position": "overlaid",
+            "timeFormat": "HH:mm",
+            "hoverDimension": "auto",
+            "legendColorizeRows": true,
+            "legendOpacity": 1,
+            "legendOrientationThreshold": 100000000
+          }
+        }
+      },
+      {
+        "id": "5ec0abefc4c492d3",
+        "type": "variable",
+        "attributes": {
+          "name": "testid",
+          "arguments": {
+            "type": "query",
+            "values": {
+              "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"k6\", tag: \"testid\")",
+              "language": "flux"
+            }
+          },
+          "selected": [
+            "smoke"
+          ]
+        },
+        "relationships": {
+          "label": {
+            "data": []
+          }
+        }
+      }
+    ]
+  },
+  "labels": []
+}

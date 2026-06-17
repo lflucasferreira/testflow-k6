@@ -52,6 +52,8 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           REPORT_OUTPUT_DIR: site/report
+          GRAFANA_DASHBOARD_URL: ${{ vars.GRAFANA_DASHBOARD_URL }}
+          GRAFANA_EMBED: ${{ vars.GRAFANA_EMBED }}
         run: |
           mkdir -p site/report results
           cp -R docs/. site/
@@ -60,6 +62,7 @@ jobs:
             echo "HTML report was not generated" >&2
             exit 1
           fi
+          node scripts/write-grafana-config.mjs site/grafana
           touch site/.nojekyll
 
       - name: Upload Pages artifact

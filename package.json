@@ -3,6 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "description": "k6 performance and load testing for TestFlow web app",
+  "homepage": "https://lflucasferreira.github.io/testflow-k6/report/",
+  "bugs": {
+    "url": "https://github.com/lflucasferreira/testflow-k6/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lflucasferreira/testflow-k6.git"
+  },
   "scripts": {
     "test:smoke": "bash scripts/run-k6.sh run scenarios/smoke/api-health.js",
     "test:smoke:ui": "K6_DASHBOARD=true K6_SCENARIO=smoke bash scripts/run-k6.sh run scenarios/smoke/api-health.js",
@@ -29,7 +37,19 @@
     "slides": "npx serve . -p 3337",
     "slides:open": "npx serve . -p 3337 & sleep 1 && open http://localhost:3337/docs/slides/",
     "docs:open": "npx serve docs -p 3338 & sleep 1 && open http://localhost:3338/",
-    "slides:pdf": "node scripts/export-slides-pdf.mjs"
+    "slides:pdf": "node scripts/export-slides-pdf.mjs",
+    "grafana:up": "bash scripts/grafana-up.sh",
+    "grafana:down": "bash scripts/grafana-down.sh",
+    "grafana:build": "docker compose --profile monitoring build k6-influx",
+    "test:smoke:grafana": "K6_INFLUXDB=true K6_SCENARIO=smoke bash scripts/run-k6.sh run --tag testid=smoke scenarios/smoke/api-health.js",
+    "test:smoke:influx:local": "K6_INFLUXDB=true K6_INFLUXDB_TARGET=local K6_SCENARIO=smoke bash scripts/run-k6.sh run --tag testid=smoke scenarios/smoke/api-health.js",
+    "test:smoke:influx:cloud": "K6_INFLUXDB=true K6_INFLUXDB_TARGET=cloud K6_SCENARIO=smoke bash scripts/run-k6.sh run --tag testid=smoke scenarios/smoke/api-health.js",
+    "test:load:mixed:grafana": "K6_INFLUXDB=true K6_PROFILE=load K6_SCENARIO=mixed-traffic bash scripts/run-k6.sh run --tag testid=mixed-traffic scenarios/load/mixed-traffic.js",
+    "test:load:mixed:influx:local": "K6_INFLUXDB=true K6_INFLUXDB_TARGET=local K6_PROFILE=load K6_SCENARIO=mixed-traffic bash scripts/run-k6.sh run --tag testid=mixed-traffic scenarios/load/mixed-traffic.js",
+    "test:load:mixed:influx:cloud": "K6_INFLUXDB=true K6_INFLUXDB_TARGET=cloud K6_PROFILE=load K6_SCENARIO=mixed-traffic bash scripts/run-k6.sh run --tag testid=mixed-traffic scenarios/load/mixed-traffic.js",
+    "influx:dashboard:generate": "node scripts/generate-influx-dashboard.mjs",
+    "influx:template:validate": "bash scripts/influx-template-validate.sh",
+    "influx:template:apply": "bash scripts/influx-template-apply.sh"
   },
   "devDependencies": {
     "@types/k6": "^1.0.0",

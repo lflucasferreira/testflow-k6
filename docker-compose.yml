@@ -5,6 +5,7 @@ services:
       - "5050:5050"
     profiles:
       - stack
+      - monitoring
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:5050/health || exit 1"]
       interval: 10s
@@ -29,3 +30,76 @@ services:
     profiles:
       - k6
       - stack
+
+  influxdb:
+    image: influxdb:2.7-alpine
+    ports:
+      - "8086:8086"
+    profiles:
+      - monitoring
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_USER:-admin}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD:-adminadmin}
+      DOCKER_INFLUXDB_INIT_ORG: ${K6_INFLUXDB_ORGANIZATION:-testflow}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${K6_INFLUXDB_BUCKET:-k6}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${K6_INFLUXDB_TOKEN:-testflow-k6-dev-token}
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    profiles:
+      - monitoring
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_BASIC_ENABLED: "false"
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+    volumes:
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+
+  k6-influx:
+    build:
+      context: .
+      dockerfile: docker/k6-influx.Dockerfile
+    image: testflow-k6-k6-influx:local
+    profiles:
+      - monitoring
+    depends_on:
+      testflow:
+        condition: service_healthy
+        required: false
+      influxdb:
+        condition: service_healthy
+    environment:
+      BASE_URL: ${BASE_URL:-http://testflow:5050}
+      DEMO_EMAIL: ${DEMO_EMAIL:-demo@automation.io}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-Demo123!}
+      K6_PROFILE: ${K6_PROFILE:-smoke}
+      K6_SCENARIO: ${K6_SCENARIO:-run}
+      K6_INFLUXDB_ORGANIZATION: ${K6_INFLUXDB_ORGANIZATION:-testflow}
+      K6_INFLUXDB_BUCKET: ${K6_INFLUXDB_BUCKET:-k6}
+      K6_INFLUXDB_TOKEN: ${K6_INFLUXDB_TOKEN:-testflow-k6-dev-token}
+      K6_INFLUXDB_ADDR: ${K6_INFLUXDB_ADDR:-http://influxdb:8086}
+      K6_INFLUXDB_INSECURE: ${K6_INFLUXDB_INSECURE:-true}
+    volumes:
+      - ./:/scripts
+    working_dir: /scripts
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  influxdb-data:

@@ -25,3 +25,5 @@ elif command -v xdg-open >/dev/null 2>&1; then
 else
   echo "$target"
 fi
+
+echo "Published report (CI): https://lflucasferreira.github.io/testflow-k6/report/" >&2

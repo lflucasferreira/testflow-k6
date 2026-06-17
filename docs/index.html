@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -182,27 +182,6 @@
         margin-top: auto;
       }
 
-      .note {
-        max-width: 760px;
-        margin: 0 auto 4rem;
-        padding: 1rem 1.25rem;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        font-size: 0.85rem;
-        color: var(--muted);
-        line-height: 1.6;
-      }
-
-      .note strong { color: var(--text); }
-      .note code {
-        font-family: var(--font-mono);
-        font-size: 0.8em;
-        background: var(--surface-2);
-        padding: 0.1em 0.35em;
-        border-radius: 4px;
-      }
-
       footer {
         margin-top: auto;
         padding: 2.5rem 2rem;
@@ -220,7 +199,6 @@
         .hero { padding: 3.5rem 1rem 2rem; }
         header { padding: 0 1rem; }
         header nav { gap: 1rem; }
-        .note { margin-left: 1rem; margin-right: 1rem; }
       }
     </style>
   </head>
@@ -231,7 +209,8 @@
         testflow-k6
       </a>
       <nav>
-        <a href="report/index.html">Report</a>
+        <a href="grafana/">Grafana</a>
+        <a href="https://lflucasferreira.github.io/testflow-k6/report/">Report</a>
         <a href="slides/index.html">Slides</a>
         <a href="https://github.com/lflucasferreira/testflow-k6" target="_blank" rel="noopener">GitHub</a>
         <a href="https://grafana.com/docs/k6/latest/" target="_blank" rel="noopener">k6 Docs</a>
@@ -242,7 +221,7 @@
       <section class="hero">
         <img class="hero-logo" src="slides/assets/k6-logo.svg" alt="Grafana k6" />
         <h1>k6 <span>Performance Suite</span></h1>
-        <p>Load, stress, spike, soak, and user-journey tests for TestFlow — smoke gate in CI, HTML report on GitHub Pages, SLO thresholds aligned with Cypress and Playwright.</p>
+        <p>Load, stress, spike, soak, and user-journey tests for TestFlow — smoke gate in CI, <a href="https://lflucasferreira.github.io/testflow-k6/report/">HTML report on GitHub Pages</a>, SLO thresholds aligned with Cypress and Playwright.</p>
         <div class="badges">
           <a href="https://github.com/lflucasferreira/testflow-k6/actions/workflows/k6.yml" target="_blank" rel="noopener">
             <img src="https://github.com/lflucasferreira/testflow-k6/actions/workflows/k6.yml/badge.svg" alt="k6 CI" />
@@ -254,19 +233,19 @@
       </section>
 
       <div class="cards">
-        <a class="card" href="report/index.html">
+        <a class="card" href="https://lflucasferreira.github.io/testflow-k6/report/">
           <div class="card-icon">📊</div>
-          <span class="card-lang live">CI · atualizado a cada push</span>
+          <span class="card-lang live">CI · updated on every push</span>
           <h2>Performance Report</h2>
-          <p>Dashboard HTML com 7 cenários — PASS/FAIL, checks, thresholds, p95 latency e métricas por suite (smoke, load, journeys, spike).</p>
-          <span class="card-arrow">↗ report/index.html</span>
+          <p>HTML dashboard for 7 scenarios — PASS/FAIL, ramp-up, latency, checks, and thresholds. Published by CI on every push to main.</p>
+          <span class="card-arrow">↗ lflucasferreira.github.io/testflow-k6/report/</span>
         </a>
 
         <a class="card" href="slides/index.html">
           <div class="card-icon">🎞️</div>
           <span class="card-lang">Reveal.js · pt-BR</span>
           <h2>Slides</h2>
-          <p>Apresentação interativa — instalação (macOS/Linux/Windows), tipos de teste, thresholds, estrutura do projeto, CI e tópicos avançados.</p>
+          <p>Interactive deck — installation (macOS/Linux/Windows), test types, thresholds, project structure, CI, and advanced topics.</p>
           <span class="card-arrow">↗ slides/index.html</span>
         </a>
 
@@ -274,7 +253,7 @@
           <div class="card-icon">📝</div>
           <span class="card-lang">Markdown</span>
           <h2>REPORT.md</h2>
-          <p>Resumo em tabela no repositório — último run local ou referência no README. Ideal para diff em PR.</p>
+          <p>Tabular summary in the repo — latest local run or reference in the README. Useful for PR diffs.</p>
           <span class="card-arrow">↗ results/REPORT.md</span>
         </a>
 
@@ -282,21 +261,34 @@
           <div class="card-icon">⚙️</div>
           <span class="card-lang">GitHub Actions</span>
           <h2>CI Workflows</h2>
-          <p><strong>k6.yml</strong> — smoke gate em push/PR. <strong>pages.yml</strong> — suíte completa + deploy do report. Load manual via workflow_dispatch.</p>
+          <p><strong>k6.yml</strong> — smoke gate on push/PR. <strong>pages.yml</strong> — full suite + report deploy. Manual load via workflow_dispatch.</p>
           <span class="card-arrow">↗ github.com/…/actions</span>
         </a>
-      </div>
 
-      <aside class="note">
-        <strong>Relatório local (k6 Web Dashboard):</strong> ao rodar
-        <code>npm run test:smoke:ui</code>, o k6 exporta
-        <code>results/report-smoke.html</code> — gráficos interativos de um único cenário.
-        Esse arquivo não vai para o Pages; use o <a href="report/index.html">Performance Report</a> para a visão consolidada dos 7 cenários.
-      </aside>
+        <a class="card" href="grafana/">
+          <div class="card-icon">📈</div>
+          <span class="card-lang live">GitHub Pages · CI</span>
+          <h2>Grafana Dashboard</h2>
+          <p>Opens the metrics dashboard from the landing page. By default redirects to the CI HTML report (7 scenarios). Optionally embed a public Grafana Cloud dashboard.</p>
+          <span class="card-arrow">↗ grafana/</span>
+        </a>
+
+        <a class="card" href="https://github.com/lflucasferreira/testflow-k6#real-time-grafana--influxdb-local" target="_blank" rel="noopener">
+          <div class="card-icon">🐳</div>
+          <span class="card-lang">Local · Docker</span>
+          <h2>Live Grafana Stack</h2>
+          <p>Real-time VUs via InfluxDB + Grafana on your machine. Run <code>npm run grafana:up</code> then <code>npm run test:smoke:grafana</code>.</p>
+          <span class="card-arrow">↗ README · local setup</span>
+        </a>
+      </div>
     </main>
 
     <footer>
       <p>
+        <a href="https://lflucasferreira.github.io/testflow-k6/report/">Performance report</a>
+        &nbsp;·&nbsp;
+        <a href="grafana/">Grafana</a>
+        &nbsp;·&nbsp;
         <a href="https://github.com/lflucasferreira/testflow-k6" target="_blank" rel="noopener">lflucasferreira/testflow-k6</a>
         &nbsp;·&nbsp;
         Target app: <a href="https://github.com/qaschoolbr/testflow" target="_blank" rel="noopener">qaschool/testflow</a>

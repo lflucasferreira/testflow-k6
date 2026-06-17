@@ -49,6 +49,7 @@ node scripts/generate-report.mjs "${RUN_ID}"
 echo ""
 echo "Report written to results/REPORT.md"
 echo "HTML report: results/report/index.html"
+echo "Published report: https://lflucasferreira.github.io/testflow-k6/report/"
 
 if [ "${#FAILURES[@]}" -gt 0 ]; then
   echo "Failed scenarios: ${FAILURES[*]}" >&2
