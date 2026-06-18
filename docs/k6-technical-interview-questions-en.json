@@ -1,0 +1,2625 @@
+{
+  "questions": [
+    {
+      "id": "k6-o-que-e",
+      "category": "fundamentos",
+      "likelihood": 95,
+      "audience": "technical",
+      "question": "What is Grafana k6 and who maintains it?",
+      "answer": "Grafana k6 is an open source load and performance testing tool originally created by Load Impact and now maintained by Grafana Labs. Scripts are written in JavaScript; the execution engine is compiled in Go for high efficiency. In the testflow-k6 project, k6 validates SLOs for the TestFlow application at localhost:5050 (Docker image qaschool/testflow).",
+      "keyPoints": [
+        "Open source — Grafana Labs since Load Impact acquisition",
+        "Focus: load, stress, spike, soak, and smoke for APIs and browser",
+        "JS scripts + Go runtime — low CPU/RAM per VU",
+        "Modern alternative to JMeter/Gatling for CI pipelines",
+        "testflow-k6: full suite against TestFlow API and /web pages"
+      ],
+      "followUps": [
+        "Is k6 free or does it require a license?",
+        "What is the difference between k6 OSS and k6 Cloud?"
+      ],
+      "tags": [
+        "fundamentals",
+        "k6",
+        "grafana",
+        "performance",
+        "slide"
+      ]
+    },
+    {
+      "id": "k6-tipos-teste",
+      "category": "fundamentos",
+      "likelihood": 92,
+      "audience": "technical",
+      "question": "What types of testing was k6 designed for?",
+      "answer": "k6 was designed for performance testing: smoke (availability), load (expected traffic), stress/breakpoint (capacity limit), spike (sudden peaks), and soak/endurance (prolonged load). It also covers browser and HTTP, WebSocket, and gRPC protocols. In testflow-k6 each type has a dedicated scenario: api-health, mixed-traffic, api-breakpoint, api-spike, and api-endurance.",
+      "keyPoints": [
+        "Smoke: fast availability and baseline latency gate",
+        "Load: sustained traffic — validates SLOs under normal load",
+        "Stress/spike/soak: degradation, recovery, and temporal drift",
+        "Does not replace functional tests — complements the pyramid",
+        "Scenarios mapped in scripts/scenario-catalog.mjs"
+      ],
+      "followUps": [
+        "When to use load vs stress in practice?",
+        "Is k6 suitable for security testing (DDoS)?"
+      ],
+      "tags": [
+        "fundamentals",
+        "smoke",
+        "load",
+        "stress",
+        "spike",
+        "soak",
+        "slide"
+      ]
+    },
+    {
+      "id": "k6-js-go-motor",
+      "category": "fundamentos",
+      "likelihood": 65,
+      "audience": "sdet",
+      "question": "Why does k6 use JavaScript for scripts but Go in the engine?",
+      "answer": "JavaScript is familiar to QAs and front-end developers, enabling readable scripts and logic reuse. The Go engine runs thousands of VUs as lightweight goroutines, avoiding JVM or heavy thread overhead. The JS script runs in an isolated runtime per VU; HTTP requests are made by the native engine. In testflow-k6, ES module helpers (lib/http.js, auth.js) leverage import/export without sacrificing performance.",
+      "keyPoints": [
+        "JS: low learning curve, adjacent npm ecosystem",
+        "Go: efficient concurrency — thousands of VUs on a modest machine",
+        "Separation: script (logic) vs runtime (I/O and metrics)",
+        "init context runs JS once; VU context repeats default function",
+        "Project uses ES modules with k6 v0.47+"
+      ],
+      "followUps": [
+        "Does k6 support TypeScript natively?",
+        "Why not Python like Locust?"
+      ],
+      "tags": [
+        "fundamentals",
+        "architecture",
+        "javascript",
+        "go",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-load-stress-spike-soak",
+      "category": "fundamentos",
+      "likelihood": 90,
+      "audience": "technical",
+      "question": "What is the difference between load, stress, spike, and soak testing?",
+      "answer": "Load simulates expected production traffic and validates SLOs under normal load — in the project, mixed-traffic with load profile. Stress/breakpoint pushes beyond normal to find degradation — api-breakpoint with degraded_responses metric. Spike applies a sudden burst (5→100 VUs) — api-spike with spike_failures. Soak maintains stable load for a long period — api-endurance with soak_latency and K6_SOAK_MINUTES.",
+      "keyPoints": [
+        "Load: SLOs under typical traffic — mixed-traffic, api-auth, api-users",
+        "Stress: ramp to 100+ VUs — tolerates more relaxed thresholds",
+        "Spike: 10s peak — validates recovery after burst",
+        "Soak: 30 min steady (reducible locally) — detects memory leaks",
+        "Profiles in config/profiles.js; thresholds in config/thresholds.js"
+      ],
+      "followUps": [
+        "Which profile to use before a release?",
+        "How to document breakpoint results for ops?"
+      ],
+      "tags": [
+        "fundamentals",
+        "load",
+        "stress",
+        "spike",
+        "soak",
+        "slide",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-vs-e2e",
+      "category": "fundamentos",
+      "likelihood": 88,
+      "audience": "technical",
+      "question": "Does k6 replace functional E2E tests? Why or why not?",
+      "answer": "No. k6 validates behavior under load — latency, error rate, and throughput — while E2E (Cypress/Playwright in the TestFlow ecosystem) validates functional flows and UI. An endpoint can pass E2E with 1 user and fail under 50 VUs. testflow-k6 complements testflow-cypress/playwright with the same endpoints and credentials, but focuses on aggregated SLOs via thresholds.",
+      "keyPoints": [
+        "E2E: functional correctness, selectors, UI regression",
+        "k6: performance, concurrency, degradation under pressure",
+        "Same BASE_URL and DEMO_EMAIL — environment alignment",
+        "Thresholds mirror functional budgets where possible",
+        "k6 browser (login-page) measures page load, does not replace E2E suite"
+      ],
+      "followUps": [
+        "When does a k6 check replace a Cypress assert?",
+        "How to prioritize investment between E2E and load?"
+      ],
+      "tags": [
+        "fundamentals",
+        "e2e",
+        "cypress",
+        "playwright",
+        "slide"
+      ]
+    },
+    {
+      "id": "k6-virtual-user",
+      "category": "fundamentos",
+      "likelihood": 93,
+      "audience": "technical",
+      "question": "What is a Virtual User (VU) in k6?",
+      "answer": "A VU (Virtual User) simulates a concurrent user executing the default function in a loop until the test ends. Each VU has an isolated JS context and makes real HTTP requests against the system under test. The number of VUs is controlled by the executor (e.g., ramping-vus with stages). In api-health smoke, the smoke profile ramps to 2 VUs; in spike, it jumps from 5 to 100 VUs in 10 seconds.",
+      "keyPoints": [
+        "1 VU ≈ 1 concurrent user running the script",
+        "VUs run in parallel — not sequential",
+        "Executor defines how many VUs exist and when they ramp",
+        "Each iteration = one complete default function execution",
+        "CI uses ci profile with up to 5 VUs for a fast gate"
+      ],
+      "followUps": [
+        "How many VUs can a local machine handle?",
+        "VU vs JMeter thread — practical difference?"
+      ],
+      "tags": [
+        "fundamentals",
+        "vu",
+        "concurrency",
+        "slide"
+      ]
+    },
+    {
+      "id": "k6-iteracao-vs-requisicao",
+      "category": "fundamentos",
+      "likelihood": 62,
+      "audience": "technical",
+      "question": "What is the difference between an iteration and an HTTP request?",
+      "answer": "An iteration is one complete execution of the default function by a VU — it may contain multiple HTTP requests, sleeps, and checks. Metrics like http_reqs count requests; iterations counts how many times the VU ran the script. In the login-flow journey, one iteration includes GET login.html, POST /api/auth/login, and GET dashboard — three requests, one iteration.",
+      "keyPoints": [
+        "Iteration: complete script cycle per VU",
+        "Request: each individual http.get/post",
+        "Built-in metrics: iterations, http_reqs, http_req_duration",
+        "Journeys with group() still count 1 iteration per loop",
+        "Throughput = requests/s; iterations/s = VU pace"
+      ],
+      "followUps": [
+        "How to correlate iterations with think time?",
+        "http_reqs vs http_req_duration — which to prioritize?"
+      ],
+      "tags": [
+        "fundamentals",
+        "iteration",
+        "http",
+        "metrics",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-protocolos-browser",
+      "category": "fundamentos",
+      "likelihood": 85,
+      "audience": "technical",
+      "question": "Does k6 support WebSockets, gRPC, and browser?",
+      "answer": "Yes. k6 has native modules for WebSockets (k6/ws), gRPC (k6/net/grpc), and browser (k6/browser with Chromium). testflow-k6 focuses on HTTP REST and browser: API scenarios cover /health, /api/users, and /api/auth/login; login-page.js uses k6/browser with data-testid. WebSockets and gRPC are not in the current suite, but the architecture supports extension.",
+      "keyPoints": [
+        "HTTP: project core — lib/http.js and lib/auth.js",
+        "Browser: scenarios/browser/login-page.js — shared-iterations, 2 VUs",
+        "WebSockets/gRPC: supported by k6, not implemented in TestFlow",
+        "Browser requires native k6 v0.52+ — does not run in default slim image",
+        "Browser module measures browser_page_load and browser_lcp"
+      ],
+      "followUps": [
+        "How to test WebSocket in k6?",
+        "Does browser module run in testflow-k6 CI?"
+      ],
+      "tags": [
+        "fundamentals",
+        "browser",
+        "websocket",
+        "grpc",
+        "slide",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-slos",
+      "category": "fundamentos",
+      "likelihood": 87,
+      "audience": "technical",
+      "question": "What are SLOs in the context of performance testing?",
+      "answer": "SLO (Service Level Objective) defines measurable quality targets — e.g., 99% of requests with p95 below 1500 ms and error rate below 1%. In k6, SLOs become thresholds that determine test pass/fail (exit code). testflow-k6 centralizes SLOs in config/thresholds.js, aligned with budgets from functional Cypress/Playwright tests.",
+      "keyPoints": [
+        "SLO: quantitative objective — latency, error, throughput",
+        "Threshold: k6 expression that fails the test if violated",
+        "smokeThresholds: p(95)<1500, checks>99%, http_req_failed<0.5%",
+        "load/stress/soak have progressively more tolerant profiles",
+        "SLOs per endpoint via tags: endpoint:health, endpoint:auth_login"
+      ],
+      "followUps": [
+        "SLO vs SLA — what is the difference?",
+        "How to negotiate SLO with product owner?"
+      ],
+      "tags": [
+        "fundamentals",
+        "slo",
+        "threshold",
+        "slide",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-complementa-cypress-playwright",
+      "category": "fundamentos",
+      "likelihood": 83,
+      "audience": "technical",
+      "question": "How does k6 complement Cypress and Playwright in TestFlow?",
+      "answer": "Cypress and Playwright validate functionality and UX with few users; k6 validates whether the same backend handles real concurrency. testflow-k6 reuses BASE_URL (localhost:5050), DEMO_EMAIL/DEMO_PASSWORD credentials, and endpoints.web paths — same qaschool/testflow app. Latency thresholds mirror functional expectations. k6 browser (login-page) covers Core Web Vitals without duplicating the full E2E suite.",
+      "keyPoints": [
+        "Same target: TestFlow app — consistency across suites",
+        "Cypress/Playwright: functional regression per PR",
+        "k6 smoke: performance gate in CI (.github/workflows/k6.yml)",
+        "Load/stress: manual or workflow_dispatch — does not block PR",
+        "HTTP journeys simulate flows similar to E2E without browser"
+      ],
+      "followUps": [
+        "Should k6 run on every PR or only smoke?",
+        "How to share selectors between Playwright and k6 browser?"
+      ],
+      "tags": [
+        "fundamentals",
+        "cypress",
+        "playwright",
+        "testflow",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-arquitetura-vu-goroutines",
+      "category": "arquitetura",
+      "likelihood": 58,
+      "audience": "sdet",
+      "question": "Explain the architecture: JS script, Go runtime, VU goroutines.",
+      "answer": "The developer writes JavaScript scripts exporting options and a default function. The k6 binary (Go) parses the script in the init context, allocates VUs as lightweight goroutines, and executes the default function in a loop in the VU context. HTTP requests are made by the native Go engine — not the JS runtime — maximizing throughput. Metrics are aggregated centrally and evaluated against thresholds at the end.",
+      "keyPoints": [
+        "Script layer: test logic in JS (ES modules in the project)",
+        "Go runtime layer: scheduling, HTTP, metrics, thresholds",
+        "1 goroutine per VU — efficient horizontal scalability",
+        "init: imports, options, setup run once globally",
+        "VU context: default function repeats until duration/stages end"
+      ],
+      "followUps": [
+        "What happens if the JS script throws an exception?",
+        "Does k6 scale horizontally across machines?"
+      ],
+      "tags": [
+        "architecture",
+        "go",
+        "goroutine",
+        "runtime",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-vs-jmeter-recursos",
+      "category": "arquitetura",
+      "likelihood": 60,
+      "audience": "technical",
+      "question": "Why is k6 more resource-efficient than JMeter?",
+      "answer": "JMeter uses JVM with heavy threads and GUI/protocol plugin overhead; k6 uses Go goroutines with minimal footprint per VU. k6 scripts are versionable code (Git) without XML; startup is instant compared to headless JMeter. In testflow-k6 CI, smoke runs in ~1 min with 3–5 native VUs — viable on ubuntu-latest without a dedicated cluster.",
+      "keyPoints": [
+        "Goroutines vs JVM threads — much lower memory per VU",
+        "Single Go binary vs JVM + JMeter plugins",
+        "Textual JS scripts — review in PR, no GUI",
+        "Native CI integration — exit code, JSON summary, thresholds",
+        "JMeter still wins for legacy protocols and mature ecosystem"
+      ],
+      "followUps": [
+        "How many VUs can k6 run vs JMeter on the same machine?",
+        "When is JMeter still the better choice?"
+      ],
+      "tags": [
+        "architecture",
+        "jmeter",
+        "comparison",
+        "resources",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-vu-completa-default",
+      "category": "arquitetura",
+      "likelihood": 82,
+      "audience": "technical",
+      "question": "What happens when a VU completes the default function?",
+      "answer": "After the default function returns, k6 immediately starts a new iteration on the same VU — in a continuous loop until the test ends (end of stages or duration). sleep() inside the function is part of the iteration. In api-health smoke, each iteration calls getHealth(), getUsers(), and login() with sleeps between them, repeating until ramp-down zeroes the VUs.",
+      "keyPoints": [
+        "Automatic loop: VU does not 'die' after one iteration",
+        "Duration controlled by ramping-vus executor stages",
+        "gracefulRampDown lets active iterations finish",
+        "setup() runs once before VUs; teardown after all",
+        "Iterations/s depends on script duration + think time"
+      ],
+      "followUps": [
+        "How to limit total number of iterations?",
+        "shared-iterations vs ramping-vus — when to use each?"
+      ],
+      "tags": [
+        "architecture",
+        "vu",
+        "iteration",
+        "executor",
+        "slide"
+      ]
+    },
+    {
+      "id": "k6-init-vs-vu-context",
+      "category": "arquitetura",
+      "likelihood": 72,
+      "audience": "sdet",
+      "question": "How does init context vs VU context work in k6?",
+      "answer": "Init context runs once per script: imports, options definition, custom metrics, and global helper functions. VU context runs the default function repeatedly — each VU has an isolated copy of local variables. Code at module global scope runs in init; code inside the default function runs per iteration. In testflow-k6, Trend/Rate/Counter are created in init; login() is called per iteration in VU context.",
+      "keyPoints": [
+        "Init: one execution — loads ES modules, defines options",
+        "VU: N parallel executions — local state per goroutine",
+        "Mutable globals in init are shared (caution!)",
+        "setup() is init-like — runs once before VUs",
+        "Project: getProfile() read in init; HTTP calls in VU context"
+      ],
+      "followUps": [
+        "Can I share a token between VUs without setup()?",
+        "Why is mutating globals in VU context dangerous?"
+      ],
+      "tags": [
+        "architecture",
+        "init",
+        "vu-context",
+        "runtime",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-modulos-es",
+      "category": "arquitetura",
+      "likelihood": 80,
+      "audience": "technical",
+      "question": "Does k6 support ES modules (`import/export`)?",
+      "answer": "Yes, since k6 v0.47+ with experimental ES module support. testflow-k6 uses import/export in all scripts: config/environments.js exports BASE_URL; lib/http.js exports getHealth(); scenarios import helpers. Internal bundler resolves relative dependencies. CommonJS (require) also works, but the project standardized ES modules for alignment with the modern JS ecosystem.",
+      "keyPoints": [
+        "import/export between config/, lib/, scenarios/, journeys/",
+        "export { handleSummary } reuses lib/summary.js",
+        "Relative paths: '../../config/profiles.js'",
+        "No node_modules — only local project modules",
+        "scenario-catalog.mjs uses .mjs for Node build scripts"
+      ],
+      "followUps": [
+        "Does k6 resolve external npm packages?",
+        "How to organize imports in a monorepo?"
+      ],
+      "tags": [
+        "architecture",
+        "es-modules",
+        "javascript",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-handle-summary",
+      "category": "arquitetura",
+      "likelihood": 78,
+      "audience": "sdet",
+      "question": "What is `handleSummary` and when is it called?",
+      "answer": "handleSummary is a hook exported by the script, invoked once at the end of the test with a data object containing all aggregated metrics. It returns a map of outputs — stdout, JSON files, etc. In testflow-k6, lib/summary.js implements buildSummary(): prints a console summary and writes results/summary-latest.json for CI artifacts. Scenarios do export { handleSummary }.",
+      "keyPoints": [
+        "Called after last VU — final aggregated data",
+        "data.metrics: http_req_duration, checks, custom metrics",
+        "buildSummary generates stdout + timestamped JSON",
+        "CI uses --summary-export=results/summary.json in workflow",
+        "npm run test:report consumes summaries for HTML"
+      ],
+      "followUps": [
+        "handleSummary vs --out json — difference?",
+        "How to send summary to Slack in the hook?"
+      ],
+      "tags": [
+        "architecture",
+        "handleSummary",
+        "report",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-concorrencia-vus",
+      "category": "arquitetura",
+      "likelihood": 55,
+      "audience": "sdet",
+      "question": "How does k6 handle concurrency between VUs?",
+      "answer": "Each VU is an independent Go goroutine running the script in real parallel — there is no central request queue. HTTP requests from different VUs hit the server simultaneously. k6 does not synchronize VUs with each other; coordination requires setup() returning read-only data or external services. In mixed-traffic, dozens of VUs fire health, users, and static pages concurrently.",
+      "keyPoints": [
+        "Real parallelism — genuine pressure on the SUT",
+        "No lock between VUs — each loops independently",
+        "setup() returns JSON serialized to all VUs",
+        "Race conditions in the SUT are exactly what we want to expose",
+        "Spike test: 100 simultaneous VUs in 10 seconds"
+      ],
+      "followUps": [
+        "How to synchronize VUs for an exact burst?",
+        "k6 open-model vs closed-model — difference?"
+      ],
+      "tags": [
+        "architecture",
+        "concurrency",
+        "vu",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-instalacao",
+      "category": "instalacao",
+      "likelihood": 88,
+      "audience": "technical",
+      "question": "How do you install k6 on macOS, Linux, and Windows?",
+      "answer": "macOS: brew install k6. Linux: official apt/deb repository (dl.k6.io) or snap. Windows: winget install k6 or Chocolatey. CI in .github/workflows/k6.yml installs via apt on ubuntu-latest. Alternative without local install: Docker grafana/k6:1.0.0 via scripts/run-k6.sh, which detects missing k6 and runs a container automatically.",
+      "keyPoints": [
+        "Homebrew, apt, winget — official Grafana installers",
+        "CI version: latest stable from deb repository",
+        "Browser module: k6 v0.52+ native — default Docker image does not include it",
+        "run-k6.sh: Docker fallback with volume mounted at /scripts",
+        "Custom image testflow-k6-k6-influx:local for InfluxDB output"
+      ],
+      "followUps": [
+        "How to pin k6 version in CI?",
+        "Does k6 browser work in Docker?"
+      ],
+      "tags": [
+        "installation",
+        "macos",
+        "linux",
+        "windows",
+        "slide",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-nativo-vs-docker",
+      "category": "instalacao",
+      "likelihood": 85,
+      "audience": "technical",
+      "question": "What is the difference between native k6 and the `grafana/k6` Docker image?",
+      "answer": "Native k6 uses a local binary — ideal for browser module, web dashboard, and fast debugging. The grafana/k6 image runs in an isolated container, mounting the project at /scripts — useful when k6 is not installed or for reproducibility. run-k6.sh chooses native if available; otherwise Docker with BASE_URL adjusted to host.docker.internal:5050. The k6-influx image includes the xk6-output-influxdb extension.",
+      "keyPoints": [
+        "Native: browser, K6_DASHBOARD, lower startup latency",
+        "Docker: grafana/k6:1.0.0 — no browser, API tests OK",
+        "Compose profile monitoring: k6-influx service + InfluxDB",
+        "BASE_URL rewrite: localhost → host.docker.internal in Docker",
+        "GitHub Actions CI uses native k6 installed via apt"
+      ],
+      "followUps": [
+        "When to prefer Docker even with k6 installed?",
+        "How to build the k6-influx image locally?"
+      ],
+      "tags": [
+        "installation",
+        "docker",
+        "grafana/k6",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-run-k6-sh",
+      "category": "instalacao",
+      "likelihood": 90,
+      "audience": "technical",
+      "question": "What is `scripts/run-k6.sh` in testflow-k6?",
+      "answer": "Bash wrapper that centralizes k6 execution: loads .env, configures InfluxDB output (K6_INFLUXDB=1), web dashboard (K6_DASHBOARD=true), chooses native k6 vs Docker vs docker compose monitoring profile, and injects -o xk6-influxdb when monitoring is active. Normalizes BASE_URL for container (host.docker.internal or testflow:5050). Single entry point for npm scripts and manual runs.",
+      "keyPoints": [
+        "Loads .env and .env.influx.cloud if K6_INFLUXDB_TARGET=cloud",
+        "build_k6_args injects -o xk6-influxdb after 'k6 run'",
+        "Fallback: native → compose k6-influx → docker run",
+        "Dashboard: K6_WEB_DASHBOARD_EXPORT for HTML in results/",
+        "Used indirectly by npm run test:smoke, test:load:*, etc."
+      ],
+      "followUps": [
+        "How to run smoke via run-k6.sh manually?",
+        "What does K6_INFLUXDB_TARGET=auto do?"
+      ],
+      "tags": [
+        "installation",
+        "run-k6.sh",
+        "scripts",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-variaveis-ambiente",
+      "category": "instalacao",
+      "likelihood": 92,
+      "audience": "technical",
+      "question": "Which environment variables does the project use (`BASE_URL`, `K6_PROFILE`)?",
+      "answer": "BASE_URL points to TestFlow (default http://localhost:5050). K6_PROFILE selects load profile: smoke, load, stress, spike, soak, breakpoint, ci. K6_SCENARIO identifies the scenario for reports. DEMO_EMAIL/DEMO_PASSWORD and SERVICE_CLIENT_ID/SECRET for auth. K6_SOAK_MINUTES reduces soak locally. CI=true activates ci profile automatically. K6_INFLUXDB, K6_DASHBOARD control observability.",
+      "keyPoints": [
+        "config/environments.js: __ENV.BASE_URL, K6_PROFILE, credentials",
+        "getProfile(): CI=true + smoke → profiles.ci (more VUs, short)",
+        "K6_SCENARIO used in buildSummary and scenario-catalog",
+        "Secrets in CI: DEMO_PASSWORD via GitHub secrets",
+        "GRAFANA_PORT, K6_WEB_DASHBOARD_PORT for local dashboard"
+      ],
+      "followUps": [
+        "How to point BASE_URL to staging?",
+        "Invalid K6_PROFILE — what happens?"
+      ],
+      "tags": [
+        "installation",
+        "variables",
+        "BASE_URL",
+        "K6_PROFILE",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-credenciais-sem-hardcode",
+      "category": "instalacao",
+      "likelihood": 86,
+      "audience": "technical",
+      "question": "How do you configure credentials without hardcoding in the repository?",
+      "answer": "config/environments.js reads __ENV.DEMO_EMAIL, DEMO_PASSWORD, SERVICE_CLIENT_ID, and SERVICE_CLIENT_SECRET with demo defaults only for local development. Production/CI injects via .env (gitignored), GitHub Secrets (DEMO_PASSWORD in k6.yml), or runner environment variables. Never commit .env with real passwords; document .env.example without sensitive values.",
+      "keyPoints": [
+        "Pattern __ENV.VAR || 'default' — override per environment",
+        "CI: secrets.DEMO_PASSWORD in k6.yml workflow",
+        "run-k6.sh sources .env if it exists (set -a)",
+        "SERVICE_CLIENT_* for OAuth client credentials if needed",
+        "Anti-pattern: logging token/password — see best practices section 18"
+      ],
+      "followUps": [
+        "How to rotate credentials in CI?",
+        "Vault or secrets manager with k6?"
+      ],
+      "tags": [
+        "installation",
+        "credentials",
+        "security",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-browser-instalacao",
+      "category": "instalacao",
+      "likelihood": 75,
+      "audience": "technical",
+      "question": "Does k6 browser require additional installation?",
+      "answer": "Yes. The browser module requires k6 v0.52+ compiled with Chromium support — it does not come in the default slim grafana/k6 Docker image. Native installation via brew/apt includes browser in recent builds. login-page.js uses import { browser } from 'k6/browser' with shared-iterations executor. In the project, browser does not run in CI smoke — local execution with native k6.",
+      "keyPoints": [
+        "k6/browser: embedded Chromium — heavy vs API-only",
+        "Default Docker image: API tests only",
+        "login-page.js: 2 VUs, 4 iterations, data-testid selectors",
+        "Metrics: browser_page_load p(95)<5000, browser_lcp",
+        "CI alternative: Playwright for UI; k6 browser for local perf"
+      ],
+      "followUps": [
+        "How to install k6 with browser on Linux CI?",
+        "Headless vs headed in k6 browser?"
+      ],
+      "tags": [
+        "installation",
+        "browser",
+        "chromium",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-config-pasta",
+      "category": "estrutura",
+      "likelihood": 91,
+      "audience": "technical",
+      "question": "Explain the `config/` folder (profiles, thresholds, environments).",
+      "answer": "config/ centralizes non-script configuration: environments.js defines BASE_URL, credentials, and TAGS; profiles.js exports stages per test type (smoke, load, stress, spike, soak, breakpoint, ci) with getProfile(); thresholds.js maps SLOs per profile via getThresholds(). Scenarios import these modules — changing SLO or load in one place reflects across the entire suite.",
+      "keyPoints": [
+        "profiles.js: stages + gracefulRampDown per profile",
+        "thresholds.js: smokeThresholds, loadThresholds, stress, soak",
+        "environments.js: __ENV vars, TAGS for scenarios",
+        "getProfile(): CI smoke → ci profile automatically",
+        "Mirrored in scripts/scenario-catalog.mjs for docs/reports"
+      ],
+      "followUps": [
+        "Why separate thresholds from profiles?",
+        "How to add a staging profile?"
+      ],
+      "tags": [
+        "structure",
+        "config",
+        "profiles",
+        "thresholds",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-endpoints-centralizados",
+      "category": "estrutura",
+      "likelihood": 89,
+      "audience": "technical",
+      "question": "Why are endpoints centralized in `lib/endpoints.js`?",
+      "answer": "Single source of truth avoids scattered hardcoded URLs — a path change (/api/users) updates all scenarios at once. endpoints.js defines health, auth.login, users.list, errors, and web.* (login.html, dashboard.html, etc.). staticPages array feeds mixed-traffic. Facilitates review, scenario-catalog documentation, and alignment with testflow-cypress/playwright.",
+      "keyPoints": [
+        "endpoints object: health, auth, users, errors, web",
+        "users.byId(id) for dynamic paths",
+        "staticPages: list for weighted pick in mixed-traffic",
+        "Opposite anti-pattern: literal URL in each scenario",
+        "Referenced by lib/http.js, auth.js, and journeys"
+      ],
+      "followUps": [
+        "How to version API v1 vs v2 in endpoints.js?",
+        "OpenAPI spec vs manual endpoints.js?"
+      ],
+      "tags": [
+        "structure",
+        "endpoints",
+        "DRY",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-http-auth-helpers",
+      "category": "estrutura",
+      "likelihood": 90,
+      "audience": "technical",
+      "question": "What is the role of `lib/http.js` and `lib/auth.js`?",
+      "answer": "lib/http.js encapsulates common requests: getHealth(), getUsers(), getStaticPage(), getErrorSimulation(), weightedPick(), and thinkTime() — each with checks and endpoint tags. lib/auth.js centralizes login(), authHeaders(), and setupAuth() for POST /api/auth/login with token validation. Scenarios stay lean; consistent checks and tags feed tag-filtered thresholds.",
+      "keyPoints": [
+        "http.js: GET health/users/static + standardized checks",
+        "auth.js: login returns token or null; setupAuth for setup()",
+        "Tags: endpoint:health, endpoint:users, endpoint:auth_login",
+        "Checks: status 200, token present, non-empty users array",
+        "thinkTime/weightedPick: reusable realistic behavior"
+      ],
+      "followUps": [
+        "Why duplicate login check in api-auth and auth.js?",
+        "How to add a POST /api/users helper?"
+      ],
+      "tags": [
+        "structure",
+        "http.js",
+        "auth.js",
+        "helpers",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-scenarios-vs-journeys",
+      "category": "estrutura",
+      "likelihood": 87,
+      "audience": "technical",
+      "question": "What is the difference between `scenarios/` and `journeys/`?",
+      "answer": "scenarios/ contains load-type tests organized in smoke/, load/, stress/, spike/, soak/, browser/ — focus on throughput and SLOs per endpoint or mix. journeys/ models multi-step user flows with group(): login-flow.js (page → API → dashboard) and authenticated-user.js (login → users → browse). Journeys measure end-to-end duration via custom Trends (login_flow_duration, journey_duration).",
+      "keyPoints": [
+        "scenarios: api-health, api-auth, mixed-traffic, api-breakpoint...",
+        "journeys: logical sequence with named group()",
+        "Same profiles/thresholds — difference is flow modeling",
+        "scenario-catalog registers both with report metadata",
+        "HTTP journeys vs browser login-page in scenarios/browser/"
+      ],
+      "followUps": [
+        "When to create a journey vs a simple load scenario?",
+        "Does group() affect aggregated metrics?"
+      ],
+      "tags": [
+        "structure",
+        "scenarios",
+        "journeys",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-scenario-catalog",
+      "category": "estrutura",
+      "likelihood": 84,
+      "audience": "technical",
+      "question": "What is `scripts/scenario-catalog.mjs`?",
+      "answer": "Node.js catalog with metadata for each scenario: script path, npm script, type (Smoke/Load/Spike...), profile, description, flow, endpoints, custom metrics, and thresholdProfile. Feeds documentation generation, HTML reports (npm run test:report), and GitHub Pages. Mirrors config/profiles.js in PROFILE_STAGES and lists SHARED_CHECKS and THRESHOLD_PROFILES for docs-code consistency.",
+      "keyPoints": [
+        "SCENARIO_CATALOG: smoke, load-auth, mixed-traffic, spike, soak...",
+        "ciReport: true/false — which scenarios enter CI report",
+        "Used by build-pages-site.mjs and run-all-smoke-report.sh",
+        "Single source for PT/EN docs in site/",
+        "Avoids drift between README and actual scripts"
+      ],
+      "followUps": [
+        "How to register a new scenario in the catalog?",
+        "scenario-catalog vs options.tags — redundancy?"
+      ],
+      "tags": [
+        "structure",
+        "scenario-catalog",
+        "documentation",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-exports-script",
+      "category": "scripts",
+      "likelihood": 93,
+      "audience": "technical",
+      "question": "What does a k6 script export (`options`, `default function`, `setup`)?",
+      "answer": "Every k6 script exports options (executor, thresholds, scenarios configuration) and a default function (logic per iteration/VU). Optionally exports setup() (initial data), teardown(), handleSummary(), and helper functions. In api-users.js: export const options with ramping-vus; export function setup() returns token; export default function usersLoad(data) consumes token; export { handleSummary }.",
+      "keyPoints": [
+        "options: required — scenarios, thresholds, tags",
+        "default function: test body per iteration",
+        "setup/teardown: lifecycle hooks once per test run",
+        "handleSummary: post-test output — lib/summary.js",
+        "Named ES module exports — import/export between files"
+      ],
+      "followUps": [
+        "setup vs JUnit beforeAll — analogy?",
+        "Can I have multiple default functions?"
+      ],
+      "tags": [
+        "scripts",
+        "options",
+        "setup",
+        "default",
+        "slide"
+      ]
+    },
+    {
+      "id": "k6-export-options",
+      "category": "scripts",
+      "likelihood": 91,
+      "audience": "technical",
+      "question": "What does `export const options` do?",
+      "answer": "Defines global test run configuration: scenarios (executor, stages, tags), thresholds (SLOs), browser extensions, etc. k6 reads options in the init context before spawning VUs. In mixed-traffic.js, options.scenarios.mixed_traffic uses ramping-vus executor with spread of getProfile('load') and getThresholds('load'). Changing options changes behavior without touching HTTP logic.",
+      "keyPoints": [
+        "scenarios: name → { executor, stages, tags, vus, iterations }",
+        "thresholds: merge of getThresholds + custom metrics",
+        "Scenario tags propagate to filterable metrics",
+        "options.browser.type: 'chromium' in login-page.js",
+        "Separate options (how) from default function (what)"
+      ],
+      "followUps": [
+        "Multiple scenarios in the same script?",
+        "How to override options via CLI k6 run --vus?"
+      ],
+      "tags": [
+        "scripts",
+        "options",
+        "configuration",
+        "slide"
+      ]
+    },
+    {
+      "id": "k6-sleep-think-time",
+      "category": "scripts",
+      "likelihood": 88,
+      "audience": "technical",
+      "question": "What is `sleep()` for in load tests?",
+      "answer": "sleep() pauses VU execution for N seconds, simulating time between user actions (think time). Without sleep, VUs generate unrealistically high load — thousands of req/s that no human user produces. In api-health, sleeps of 0.5–1s between health, users, and login. Spike uses sleep(0.1) minimum; soak uses thinkTime(1, 4) for variable pauses.",
+      "keyPoints": [
+        "Think time: interval between actions — realistic modeling",
+        "sleep is blocking on the VU — no CPU, goroutine yields",
+        "Load = f(VUs, script duration, sleep)",
+        "Reducing sleep increases throughput artificially",
+        "thinkTime(min, max) in lib/http.js: uniform random"
+      ],
+      "followUps": [
+        "sleep vs exec.vu.pauseInMs — difference?",
+        "How to calculate think time from analytics?"
+      ],
+      "tags": [
+        "scripts",
+        "sleep",
+        "think-time",
+        "slide",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-think-time-projeto",
+      "category": "scripts",
+      "likelihood": 82,
+      "audience": "technical",
+      "question": "What is think time and how is it simulated in testflow-k6?",
+      "answer": "Think time is the pause between user interactions — reading the screen, typing, deciding. In the project, thinkTime(min, max) in lib/http.js returns random seconds between min and max; mixed-traffic uses thinkTime(0.5, 2) after weightedPick; api-endurance uses thinkTime(1, 4) in soak. Values reflect real usage vs spike which minimizes pause for maximum stress.",
+      "keyPoints": [
+        "thinkTime(): Math.random between min and max seconds",
+        "mixed-traffic: 0.5–2s after each weighted request",
+        "soak: 1–4s — simulates prolonged realistic usage",
+        "spike/stress: low fixed sleep (0.1–0.2s)",
+        "Adjusting think time changes RPS without changing VUs"
+      ],
+      "followUps": [
+        "Fixed think time vs normal distribution?",
+        "How to extract think time from session replay?"
+      ],
+      "tags": [
+        "scripts",
+        "think-time",
+        "realism",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-setup-dados-vus",
+      "category": "scripts",
+      "likelihood": 85,
+      "audience": "technical",
+      "question": "How do you pass data between setup and VUs?",
+      "answer": "setup() runs once before VUs, returns a serializable object (JSON) passed as data argument to the default function. In api-users.js, setup() calls setupAuth() and returns { token }; usersLoad(data) uses data.token in getUsers(). Alternative: login() per iteration (api-auth) when each VU needs the full flow. setup is read-only shared — mutation is not safe between VUs.",
+      "keyPoints": [
+        "export function setup() { return setupAuth(); }",
+        "default function(data) receives setup return value",
+        "Shared token: efficient for read-heavy users load",
+        "login per iteration: realistic for auth load and journeys",
+        "setup failure → test aborts before spawning VUs"
+      ],
+      "followUps": [
+        "setup vs inline login() — trade-offs?",
+        "Passing a large array in setup — limit?"
+      ],
+      "tags": [
+        "scripts",
+        "setup",
+        "token",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-ramping-vus",
+      "category": "executors",
+      "likelihood": 94,
+      "audience": "technical",
+      "question": "What is the `ramping-vus` executor?",
+      "answer": "ramping-vus adjusts the number of VUs over time according to a stages array with duration and target. Each VU executes the default function in a loop while active. It is the default executor for all API scenarios in testflow-k6: smoke, load, stress, spike, soak, and breakpoint. Stages define ramp-up, steady state, and gradual ramp-down.",
+      "keyPoints": [
+        "Open-model executor: fixed VUs per stage, unlimited iterations",
+        "Spread getProfile() injects stages + gracefulRampDown",
+        "Smoke example: 10s→2 VUs, 20s steady, 5s→0",
+        "Spike: 30s→5, 10s→100, 1m steady, fast ramp-down",
+        "Alternative: shared-iterations for browser login-page"
+      ],
+      "followUps": [
+        "ramping-vus vs constant-vus — when to use?",
+        "How to simulate diurnal traffic with many stages?"
+      ],
+      "tags": [
+        "executors",
+        "ramping-vus",
+        "stages",
+        "slide",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-stages-duration-target",
+      "category": "executors",
+      "likelihood": 92,
+      "audience": "technical",
+      "question": "Explain `stages: [{ duration, target }]`.",
+      "answer": "Each stage defines for how long (duration, e.g. '1m', '30s') k6 maintains or ramps to target VUs. Between stages, k6 linearly interpolates the number of VUs. In load profile: 1m→10, 3m→25, 2m→25, 1m→0. duration accepts 's', 'm', 'h'. target: 0 ends VUs (ramp-down). gracefulRampDown lets active iterations finish before kill.",
+      "keyPoints": [
+        "duration: string with unit — '10s', '30m'",
+        "target: integer number of VUs at end of stage",
+        "Linear ramp between consecutive stage targets",
+        "target: 0 in last stage — orderly shutdown",
+        "profiles.js: single reusable stages source"
+      ],
+      "followUps": [
+        "Stage with target lower than previous — ramp-down?",
+        "Total test duration = sum of stages?"
+      ],
+      "tags": [
+        "executors",
+        "stages",
+        "duration",
+        "target",
+        "slide",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-graceful-ramp-down",
+      "category": "executors",
+      "likelihood": 58,
+      "audience": "technical",
+      "question": "What is `gracefulRampDown`?",
+      "answer": "gracefulRampDown defines tolerance time after a stage with target:0 for VUs to complete in-progress iterations before shutting down. Avoids cutting HTTP requests mid-flight. In smoke, gracefulRampDown: '5s'; load uses '30s'; stress '1m'. Without it, final metrics may have aborted requests and false negative checks.",
+      "keyPoints": [
+        "String duration — e.g. '5s', '30s', '1m'",
+        "Applies when VUs are reduced or zeroed",
+        "Important in long journeys with multiple HTTP calls",
+        "Defined in config/profiles.js per profile",
+        "Different from teardown() — executor behavior"
+      ],
+      "followUps": [
+        "gracefulRampDown vs final sleep in script?",
+        "What if iteration exceeds gracefulRampDown?"
+      ],
+      "tags": [
+        "executors",
+        "gracefulRampDown",
+        "ramp-down",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-perfil-ci-vs-smoke",
+      "category": "executors",
+      "likelihood": 88,
+      "audience": "technical",
+      "question": "How does the `ci` profile differ from `smoke` in the project?",
+      "answer": "Both are fast gates, but getProfile() returns profiles.ci when CI=true and K6_PROFILE=smoke: stages 15s→3, 30s→5, 10s→0 (~55s total) vs local smoke 10s→2, 20s→2, 5s→0 (~35s). CI uses more VUs for slightly longer time for statistical stability on GitHub runner. Thresholds remain smokeThresholds via getThresholds('smoke').",
+      "keyPoints": [
+        "Automatic detection: __ENV.CI === 'true'",
+        "ci: up to 5 VUs — local smoke: up to 2 VUs",
+        "Workflow k6.yml sets CI=true and K6_PROFILE=smoke",
+        "Same thresholds — identical SLOs",
+        "CI goal: < 1 min, deterministic, low flake"
+      ],
+      "followUps": [
+        "Why does CI need more VUs than local smoke?",
+        "How to test ci profile locally?"
+      ],
+      "tags": [
+        "executors",
+        "ci",
+        "smoke",
+        "profiles",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-profile-breakpoint",
+      "category": "executors",
+      "likelihood": 86,
+      "audience": "technical",
+      "question": "What does `K6_PROFILE=breakpoint` do in the stress test?",
+      "answer": "api-breakpoint.js chooses profiles.breakpoint when K6_PROFILE=breakpoint: stepped ramp 10→25→50→75→100→125 VUs in 2-minute steps each — more granular than default stress. Goal is to find exact degradation point. degraded_responses metric increments when health >3s or users >5s. Thresholds stress (http_req_failed<5%, checks>95%).",
+      "keyPoints": [
+        "breakpoint: 7 stages — 25 VU increments",
+        "default stress: more aggressive ramp to 100 VUs",
+        "degraded_responses Counter — does not fail test alone",
+        "npm run test:stress with K6_PROFILE=breakpoint",
+        "Does not run in CI — destructive for shared env"
+      ],
+      "followUps": [
+        "How to identify exact VU count at breakpoint?",
+        "breakpoint vs stress — which to run first?"
+      ],
+      "tags": [
+        "executors",
+        "breakpoint",
+        "stress",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-soak-reduzir-duracao",
+      "category": "executors",
+      "likelihood": 80,
+      "audience": "technical",
+      "question": "How do you reduce soak duration locally?",
+      "answer": "api-endurance.js uses buildSoakProfile() which reads K6_SOAK_MINUTES (default 30). For local dev: K6_SOAK_MINUTES=5 reduces steady state from 30m to 5m. Ramp-up/down fixed at 2m each. profiles.js soak has 30m hardcoded — endurance scenario overrides via dynamic function. npm run test:soak respects the environment variable.",
+      "keyPoints": [
+        "K6_SOAK_MINUTES=5 — shortened steady state",
+        "Default 30m — detect real drift and memory leaks",
+        "buildSoakProfile(): template `${minutes}m`",
+        "soak_latency Trend records health + users per iteration",
+        "Never run 30m soak in CI — timeout and resources"
+      ],
+      "followUps": [
+        "Minimum useful soak to detect a leak?",
+        "Invalid K6_SOAK_MINUTES — fallback?"
+      ],
+      "tags": [
+        "executors",
+        "soak",
+        "K6_SOAK_MINUTES",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-ramping-vs-shared-iterations",
+      "category": "executors",
+      "likelihood": 83,
+      "audience": "technical",
+      "question": "What is the difference between `ramping-vus` and `shared-iterations`?",
+      "answer": "ramping-vus: VUs execute default function in a loop for duration — open model, common in load/stress. shared-iterations: fixed total iterations divided among VUs — closed model. login-page.js uses shared-iterations with vus:2, iterations:4 (2 iter/VU) because browser is heavy. API scenarios use ramping-vus exclusively.",
+      "keyPoints": [
+        "ramping-vus: control by VUs and time — load tests",
+        "shared-iterations: fixed count — browser smoke, short tests",
+        "per-vu-iterations: N iter per VU — closed alternative",
+        "Browser: few VUs, limited iterations",
+        "Choice impacts throughput interpretation"
+      ],
+      "followUps": [
+        "When to use constant-arrival-rate?",
+        "shared-iterations with 100 iterations — behavior?"
+      ],
+      "tags": [
+        "executors",
+        "shared-iterations",
+        "ramping-vus",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-check-vs-thresholds",
+      "category": "checks",
+      "likelihood": 95,
+      "audience": "technical",
+      "question": "What is the difference between `check()` and `thresholds`?",
+      "answer": "check() is a per-response assertion — status 200, token present — records pass/fail in the checks metric without immediately aborting the iteration. thresholds are aggregated gates at the end: e.g. checks: ['rate>0.99'], http_req_duration: ['p(95)<1500']. If a threshold fails, k6 exit code ≠ 0. In testflow-k6, checks live in lib/http.js and auth.js; thresholds in config/thresholds.js.",
+      "keyPoints": [
+        "check: granular, per request, does not stop the test",
+        "threshold: aggregated, p95/p99/rate, determines CI pass/fail",
+        "checks rate>0.99 = 99% of checks passed",
+        "Separation: helpers check; options define SLOs",
+        "Tag filters: http_req_duration{endpoint:health}"
+      ],
+      "followUps": [
+        "Check failed but threshold passed — possible?",
+        "check vs assert in a functional tool?"
+      ],
+      "tags": [
+        "checks",
+        "thresholds",
+        "slo",
+        "slide",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-threshold-falha",
+      "category": "checks",
+      "likelihood": 90,
+      "audience": "technical",
+      "question": "What happens when a threshold fails?",
+      "answer": "k6 completes the test run, aggregates final metrics, and evaluates thresholds. Any violation results in non-zero exit code (typically 1), failing the CI job. Console shows ✗ next to the violated threshold. In k6.yml, the 'Run k6 smoke' step fails the PR if p95 or checks rate violate smokeThresholds. Summary artifact is still uploaded with if: always().",
+      "keyPoints": [
+        "Test does not abort mid-run — runs until stages end",
+        "Exit code ≠ 0 → red GitHub Actions job",
+        "Multiple thresholds — any failure fails the run",
+        "abortOnFail option (rare) can end early",
+        "HTML report shows thresholds pass/fail"
+      ],
+      "followUps": [
+        "How to set threshold warning vs fail?",
+        "Flaky threshold in CI — what to do?"
+      ],
+      "tags": [
+        "checks",
+        "thresholds",
+        "exit-code",
+        "ci",
+        "slide"
+      ]
+    },
+    {
+      "id": "k6-thresholds-por-tag",
+      "category": "checks",
+      "likelihood": 76,
+      "audience": "sdet",
+      "question": "How do you filter thresholds by tag (`endpoint:health`)?",
+      "answer": "Tags on http.get/post become dimensions in metrics. Thresholds can filter: 'http_req_duration{endpoint:health}': ['p(95)<500']. lib/http.js tags getHealth with endpoint:health, getUsers with endpoint:users, login with endpoint:auth_login. smokeThresholds defines SLOs per endpoint beyond global p(95)<1500.",
+      "keyPoints": [
+        "tags: { endpoint: 'health' } in http params",
+        "Threshold syntax: metric{tag:value}",
+        "Allows different SLO per critical endpoint",
+        "scenario tags (test_type:smoke) also filterable",
+        "Diagnosis: which endpoint violated global SLO"
+      ],
+      "followUps": [
+        "Multiple tags in threshold filter?",
+        "Tags vs groups — impact on metrics?"
+      ],
+      "tags": [
+        "checks",
+        "tags",
+        "thresholds",
+        "endpoint",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-p95-1500",
+      "category": "checks",
+      "likelihood": 91,
+      "audience": "technical",
+      "question": "Explain `http_req_duration: ['p(95)<1500']`.",
+      "answer": "Requires 95% of HTTP requests to complete in less than 1500 ms. p(95) is the 95th percentile — the slowest 5% may exceed it. smokeThresholds uses global p(95)<1500 and per-endpoint filters (health p95<500). load relaxes to p(95)<2500. Unit is milliseconds. Built-in http_req_duration metric aggregates all HTTP requests in the test.",
+      "keyPoints": [
+        "p(95): 95% of samples below the limit",
+        "1500 ms = 1.5s — TestFlow smoke SLO",
+        "Complementary: p(99)<5000, avg<800 in smoke",
+        "load: p(95)<2500 — higher load tolerates latency",
+        "Percentiles robust to outliers vs average"
+      ],
+      "followUps": [
+        "p95 vs avg — which SLO to choose?",
+        "Insufficient samples — is p95 reliable?"
+      ],
+      "tags": [
+        "checks",
+        "p95",
+        "latency",
+        "threshold",
+        "slide"
+      ]
+    },
+    {
+      "id": "k6-checks-rate",
+      "category": "checks",
+      "likelihood": 87,
+      "audience": "technical",
+      "question": "What does `checks: ['rate>0.99']` mean?",
+      "answer": "Threshold on the checks metric requires check() success rate above 99% — at most 1% of assertions may fail. smoke and soak use rate>0.99; load accepts rate>0.98; stress rate>0.95. checks rate is aggregated from all check() in the test: health status 200, login token present, etc.",
+      "keyPoints": [
+        "rate = passes / total checks executed",
+        "Complements http_req_failed — covers business logic",
+        "Failed login token → reduces checks rate even with HTTP 200",
+        "loadThresholds: 98% — more tolerant under load",
+        "stress: 95% — expected degradation"
+      ],
+      "followUps": [
+        "100% checks rate mandatory in smoke?",
+        "check() without name — impact on metric?"
+      ],
+      "tags": [
+        "checks",
+        "rate",
+        "threshold",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-checks-nos-helpers",
+      "category": "checks",
+      "likelihood": 84,
+      "audience": "technical",
+      "question": "Why are checks in helpers and not in scenarios?",
+      "answer": "Centralizing in lib/http.js and auth.js ensures consistent assertions, avoids duplication and drift between scenarios. Scenarios focus on composition and load; helpers ensure getHealth always validates status 200 and latency. Per-endpoint thresholds depend on tags applied in helpers. New scenarios inherit correct checks automatically.",
+      "keyPoints": [
+        "DRY: one place to change /health assertion",
+        "scenario-catalog SHARED_CHECKS documents common list",
+        "api-auth duplicates login checks — intentional exception for metrics",
+        "Easier alignment with TestFlow functional tests",
+        "Anti-pattern: different inline check per file"
+      ],
+      "followUps": [
+        "When should a specific check stay in the scenario?",
+        "Helper check vs threshold — redundancy?"
+      ],
+      "tags": [
+        "checks",
+        "helpers",
+        "DRY",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-slos-funcionais",
+      "category": "checks",
+      "likelihood": 81,
+      "audience": "technical",
+      "question": "How do you align SLOs with functional tests?",
+      "answer": "config/thresholds.js comments alignment with testflow-cypress/playwright budgets. Critical endpoints (/health fast, /api/users <2s) mirror functional timeouts. When adding an endpoint in E2E, define corresponding threshold with tag. scenario-catalog THRESHOLD_PROFILES documents SLOs for stakeholders. Review thresholds when E2E increases timeout.",
+      "keyPoints": [
+        "Same BASE_URL and paths — same service expectation",
+        "health p95<500 aligned with instant UI expectation",
+        "auth_login p95<2000 — E2E login tolerance",
+        "Process: new endpoint → E2E assert + k6 threshold",
+        "Negotiate SLO with product using load test data"
+      ],
+      "followUps": [
+        "E2E timeout 10s — should k6 threshold match?",
+        "Who owns SLOs — QA or SRE?"
+      ],
+      "tags": [
+        "checks",
+        "slo",
+        "cypress",
+        "playwright",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-http-modulo",
+      "category": "http",
+      "likelihood": 92,
+      "audience": "technical",
+      "question": "How does k6 make HTTP requests (`k6/http`)?",
+      "answer": "import http from 'k6/http' exposes http.get(), http.post(), http.put(), http.del(), etc. Returns Response object with status, body, headers, timings. Optional params: headers, tags, timeout. lib/http.js wraps calls with BASE_URL + endpoints and checks. auth.js uses http.post for JSON login. k6/http uses Go engine — not browser fetch.",
+      "keyPoints": [
+        "http.get(url, params) — params: headers, tags, timeout",
+        "Response: .status, .json(), .body, .timings.duration",
+        "JSON payload: JSON.stringify + Content-Type application/json",
+        "BASE_URL from config/environments.js prefixes paths",
+        "Automatic metrics: http_req_duration, http_req_failed"
+      ],
+      "followUps": [
+        "http batch vs sequential requests?",
+        "How to send multipart/form-data?"
+      ],
+      "tags": [
+        "http",
+        "k6/http",
+        "requests",
+        "slide"
+      ]
+    },
+    {
+      "id": "k6-tags-http",
+      "category": "http",
+      "likelihood": 86,
+      "audience": "technical",
+      "question": "What are tags for in `http.get/post`?",
+      "answer": "Tags dimension metrics for filtering and thresholds: { endpoint: 'health', name: 'GET /health' }. Enable http_req_duration{endpoint:health} and per-endpoint analysis in summary/Grafana. Scenario tags (test_type:load, suite:api-auth) propagate from options.scenarios. Essential to diagnose which endpoint degraded under load.",
+      "keyPoints": [
+        "endpoint tag: health, users, auth_login, static",
+        "name tag: readable for reports — 'POST /api/auth/login'",
+        "scenario tags: test_type, suite from options",
+        "Grafana/InfluxDB filtering by tag",
+        "Standardization via lib/http.js — no ad hoc tags"
+      ],
+      "followUps": [
+        "Limit of tags per request?",
+        "Custom tags vs built-in k6?"
+      ],
+      "tags": [
+        "http",
+        "tags",
+        "metrics",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-login-token",
+      "category": "http",
+      "likelihood": 90,
+      "audience": "technical",
+      "question": "How do `login()` and token return work?",
+      "answer": "lib/auth.js login() POSTs email/password to /api/auth/login, runs checks (status 200, non-empty token string), and returns res.json('token') or null if check fails. Used by mixed-traffic, journeys, and setup indirectly. authHeaders(token) builds Authorization Bearer for authenticated getUsers. Credentials from DEMO_EMAIL/DEMO_PASSWORD in environments.js.",
+      "keyPoints": [
+        "POST JSON { email, password } → { token: '...' }",
+        "check() validates before returning token",
+        "null on failure — scenario must handle or fail checks rate",
+        "Tag endpoint:auth_login for specific threshold",
+        "login_duration Trend in api-auth measures isolated auth latency"
+      ],
+      "followUps": [
+        "Token expires during long test — what about soak?",
+        "Refresh token flow in k6?"
+      ],
+      "tags": [
+        "http",
+        "auth",
+        "login",
+        "token",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-setup-auth",
+      "category": "http",
+      "likelihood": 85,
+      "audience": "technical",
+      "question": "What does `setupAuth()` do in the setup phase?",
+      "answer": "setupAuth() in lib/auth.js calls login() once and returns { token } for consumption via setup(). Used in api-users.js: setup obtains shared token, default function does authenticated GET /api/users per iteration without re-login. Efficient for read-heavy load. Different from api-auth which POSTs login every iteration to measure auth throughput.",
+      "keyPoints": [
+        "export function setup() { return setupAuth(); }",
+        "Token serialized to all VUs via setup",
+        "usersLoad(data) uses data.token — avoids repeated login",
+        "Login failure in setup → abort before load",
+        "Pattern: setup for read, per-iteration for write/auth load"
+      ],
+      "followUps": [
+        "Single token for 100 VUs — realistic?",
+        "setupAuth vs OAuth client credentials?"
+      ],
+      "tags": [
+        "http",
+        "setupAuth",
+        "setup",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-endpoints-estaticos",
+      "category": "http",
+      "likelihood": 83,
+      "audience": "technical",
+      "question": "How do you test static endpoints (`/web/*.html`)?",
+      "answer": "lib/http.js getStaticPage(path) does GET on /web/login.html, dashboard.html, etc. Checks validate status 200 and Content-Type text/html. endpoints.web centralizes paths; staticPages array lists pages for mixed-traffic (15% weight). Journeys use getStaticPage after login to simulate navigation. TestFlow serves static HTML shell on the same port 5050.",
+      "keyPoints": [
+        "GET /web/login.html, dashboard.html, team.html...",
+        "getStaticPage(endpoints.web.dashboard) in journeys",
+        "mixed-traffic: random pick from staticPages",
+        "Tag endpoint:static for metrics",
+        "Complements API tests — CDN/cache behavior"
+      ],
+      "followUps": [
+        "Slow static page — impact on mixed-traffic?",
+        "Test JS/CSS assets separately?"
+      ],
+      "tags": [
+        "http",
+        "static",
+        "web",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-weighted-pick",
+      "category": "http",
+      "likelihood": 88,
+      "audience": "technical",
+      "question": "What is `weightedPick()` in mixed-traffic?",
+      "answer": "weightedPick() in lib/http.js randomly selects a callback function with relative weight — simulates real traffic mix. mixed-traffic.js: 35% health, 30% authenticated users, 15% static page, 20% anonymous users. After initial login, each iteration picks one action. mixed_request_duration Trend records latency per type.",
+      "keyPoints": [
+        "Array { weight, fn } — random roll over sum of weights",
+        "Modeling: frequent health checks, occasional static",
+        "Login once per iteration before pick",
+        "thinkTime(0.5, 2) after each action",
+        "CI workflow_dispatch runs mixed-traffic for manual load"
+      ],
+      "followUps": [
+        "How to calibrate weights with production analytics?",
+        "weightedPick vs round-robin?"
+      ],
+      "tags": [
+        "http",
+        "weightedPick",
+        "mixed-traffic",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-trend-rate-counter",
+      "category": "metricas",
+      "likelihood": 82,
+      "audience": "sdet",
+      "question": "What is the difference between Trend, Rate, and Counter?",
+      "answer": "Trend: aggregates numeric values (latency) — avg, min, max, percentiles. Rate: true/false proportion — error rate. Counter: incremental sum of events. In the project: login_duration (Trend), login_errors (Rate), degraded_responses (Counter), spike_failures (Rate), soak_latency (Trend), browser_page_load (Trend).",
+      "keyPoints": [
+        "Trend: login_duration.add(ms) — p95 percentiles",
+        "Rate: loginErrors.add(!ok) — rate<0.01 threshold",
+        "Counter: degradedResponses.add(1) — degradation count",
+        "Created in init: new Trend('name', true) — true=isTime",
+        "Built-in: http_req_duration is underlying Trend"
+      ],
+      "followUps": [
+        "Does Gauge exist in k6?",
+        "Trend vs built-in http_req_duration — when custom?"
+      ],
+      "tags": [
+        "metrics",
+        "trend",
+        "rate",
+        "counter",
+        "slide",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-threshold-metrica-custom",
+      "category": "metricas",
+      "likelihood": 78,
+      "audience": "sdet",
+      "question": "How do you add a threshold on a custom metric?",
+      "answer": "Define metric in init (e.g. const loginDuration = new Trend('login_duration')), add values in VU context with .add(), and include threshold in options.thresholds: login_duration: ['p(95)<2000']. api-auth.js exemplifies login_duration and login_errors with thresholds beyond getThresholds('load'). Metric name must match exactly.",
+      "keyPoints": [
+        "options.thresholds spread: ...getThresholds(), login_duration: [...]",
+        "spike_failures: ['rate<0.10'] in api-spike.js",
+        "browser_page_load: ['p(95)<5000'] in login-page.js",
+        "Custom metrics appear in summary JSON",
+        "InfluxDB export includes custom metrics"
+      ],
+      "followUps": [
+        "Threshold on Counter vs Rate?",
+        "Custom metric without threshold — still useful?"
+      ],
+      "tags": [
+        "metrics",
+        "threshold",
+        "custom",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-metricas-custom-projeto",
+      "category": "metricas",
+      "likelihood": 88,
+      "audience": "technical",
+      "question": "Project examples: `login_duration`, `spike_failures`.",
+      "answer": "login_duration (Trend) and login_errors (Rate) in api-auth.js measure auth under load. spike_failures (Rate) in api-spike.js marks health/users failures during burst. degraded_responses (Counter) in api-breakpoint counts slow responses. soak_latency (Trend) in api-endurance tracks drift. browser_page_load and browser_lcp in login-page browser.",
+      "keyPoints": [
+        "login_duration p(95)<2000 — auth bottleneck",
+        "spike_failures rate<0.10 — burst tolerance",
+        "degraded_responses — health >3s or users >5s",
+        "soak_latency — trend over 30 min",
+        "login_flow_duration, journey_duration — HTTP E2E journeys"
+      ],
+      "followUps": [
+        "Which metric to look at first in spike?",
+        "degraded_responses vs http_req_failed?"
+      ],
+      "tags": [
+        "metrics",
+        "login_duration",
+        "spike_failures",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-metricas-builtin",
+      "category": "metricas",
+      "likelihood": 89,
+      "audience": "technical",
+      "question": "What are the most important k6 built-in metrics?",
+      "answer": "http_req_duration: total HTTP latency. http_req_failed: failure rate (status 0 or 4xx/5xx configurable). http_reqs: total throughput. checks: check() pass rate. iterations: complete cycles per VU. vus: active VUs. data_received/sent: bandwidth. In testflow-k6 summary, buildSummary highlights http_req_failed, p95, and checks rate.",
+      "keyPoints": [
+        "http_req_duration — main SLO p95/p99",
+        "http_req_failed rate<0.01 — smoke/load gate",
+        "checks rate — business assertions",
+        "iterations + vus — understand applied load",
+        "Submetrics per tag via endpoint:* filters"
+      ],
+      "followUps": [
+        "http_req_waiting vs http_req_duration?",
+        "iteration_duration vs http_req_duration?"
+      ],
+      "tags": [
+        "metrics",
+        "built-in",
+        "http_req_duration",
+        "slide"
+      ]
+    },
+    {
+      "id": "k6-smoke-vs-load-vs-stress",
+      "category": "tipos-teste",
+      "likelihood": 93,
+      "audience": "technical",
+      "question": "When to use smoke vs load vs stress?",
+      "answer": "Smoke (api-health): every PR/CI — validates app alive and baseline SLOs in ~1 min. Load (mixed-traffic, api-auth, api-users): pre-release or workflow_dispatch — expected traffic for minutes. Stress (api-breakpoint): capacity planning — find limit with degraded_responses. Spike/soak: special events (Black Friday) and long stability. Scale frequency by risk.",
+      "keyPoints": [
+        "Smoke: CI gate k6.yml test job — blocks merge",
+        "Load: manual dispatch profile load/stress/spike",
+        "Stress/breakpoint: never CI — dedicated environment",
+        "Soak: nightly or pre-prod weekend",
+        "scenario-catalog ciReport flag guides report inclusion"
+      ],
+      "followUps": [
+        "Load test in staging vs production?",
+        "How many types to run before major release?"
+      ],
+      "tags": [
+        "test-types",
+        "smoke",
+        "load",
+        "stress",
+        "slide",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-teste-spike",
+      "category": "tipos-teste",
+      "likelihood": 86,
+      "audience": "technical",
+      "question": "What does a spike test validate?",
+      "answer": "Spike simulates sudden traffic increase — e.g. marketing push or viral moment. api-spike.js spike profile: 5→100 VUs in 10s, holds 1m, ramp-down. Validates system does not collapse permanently and recovers after burst. spike_failures rate<0.10 metric — up to 10% failure acceptable. Stress thresholds (p95<5000, failed<5%).",
+      "keyPoints": [
+        "Burst 5→100 VUs — instant stress",
+        "spike_failures: health or users non-200",
+        "sleep(0.1) — maximum pressure",
+        "workflow_dispatch allows spike profile in manual CI",
+        "Complements autoscaling/load balancer tuning"
+      ],
+      "followUps": [
+        "Spike vs stress — practical difference?",
+        "System recovered — how to measure recovery time?"
+      ],
+      "tags": [
+        "test-types",
+        "spike",
+        "api-spike",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-soak-endurance",
+      "category": "tipos-teste",
+      "likelihood": 84,
+      "audience": "technical",
+      "question": "What is the goal of a soak/endurance test?",
+      "answer": "Soak maintains moderate stable load for a long period (default 30 min, 15 VUs) to detect memory leaks, connection pool exhaustion, and latency drift. api-endurance.js uses soak_latency Trend comparing health/users over time. Soak thresholds: failed<0.5%, p95<2500, checks>99%. K6_SOAK_MINUTES shortens for local dev.",
+      "keyPoints": [
+        "15 VUs steady — prolonged moderate load",
+        "soak_latency — rising trend indicates leak",
+        "thinkTime(1,4) — sustained realistic usage",
+        "Does not run in CI — duration and resources",
+        "Complements spike (short/intense) vs soak (long/moderate)"
+      ],
+      "followUps": [
+        "Minimum soak time for JVM leak?",
+        "Soak p95 rising linearly — next step?"
+      ],
+      "tags": [
+        "test-types",
+        "soak",
+        "endurance",
+        "api-endurance",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-breakpoint-test",
+      "category": "tipos-teste",
+      "likelihood": 85,
+      "audience": "technical",
+      "question": "What is a breakpoint test?",
+      "answer": "Breakpoint finds the point where the system degrades or fails under increasing load — 'how many VUs until p95 explodes?'. api-breakpoint.js ramps in steps (10→125 VUs) counting degraded_responses when latency exceeds limits. Different from load (nominal load) and stress (beyond normal without fine steps). K6_PROFILE=breakpoint activates extended profile.",
+      "keyPoints": [
+        "2m steps each — observe metrics per level",
+        "degraded_responses Counter — early warning signal",
+        "Stress thresholds tolerate 5% failed",
+        "Result: recommended max production capacity",
+        "Document VU count at knee of the curve"
+      ],
+      "followUps": [
+        "Breakpoint vs traditional capacity test?",
+        "How to present results to infra?"
+      ],
+      "tags": [
+        "test-types",
+        "breakpoint",
+        "stress",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-smoke-ci-stress-nao",
+      "category": "tipos-teste",
+      "likelihood": 90,
+      "audience": "technical",
+      "question": "Why does smoke run in CI but stress does not?",
+      "answer": "Smoke is short (~1 min), low VU count, deterministic, and validates performance regression on every PR — fast feedback. Stress/breakpoint/soak are long, aggressive, consume runner minutes, and can take down shared service container. k6.yml test job runs api-health smoke; load-manual only via workflow_dispatch. publish-pages generates smoke report on main.",
+      "keyPoints": [
+        "CI gate: api-health smoke — CI=true, 5 VUs max",
+        "Stress 30+ min — timeout and flakiness",
+        "qaschool/testflow service container — cannot sustain 100+ VUs",
+        "Manual dispatch: chosen profile load/stress/spike",
+        "Cost/benefit: smoke catches 80% perf regressions"
+      ],
+      "followUps": [
+        "Smoke false green — when would stress fail?",
+        "Dedicated perf environment in CI?"
+      ],
+      "tags": [
+        "test-types",
+        "smoke",
+        "ci",
+        "stress",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-group",
+      "category": "jornadas",
+      "likelihood": 85,
+      "audience": "technical",
+      "question": "What is `group()` for in k6?",
+      "answer": "group(name, fn) logically groups requests for metrics and logs — shows breakdown by step in the summary. login-flow.js uses group('01_load_login_page'), group('02_api_login'), and group('03_post_login_navigation'). authenticated-user.js groups login, fetch users, and browse. Does not isolate VUs — only organizes telemetry and helps debug which journey step failed.",
+      "keyPoints": [
+        "import { group } from 'k6'",
+        "Descriptive name appears in output and reports",
+        "http_req_duration metrics aggregated by group tag",
+        "HTTP journeys simulate E2E flow without browser",
+        "Complements login_flow_duration end-to-end Trend"
+      ],
+      "followUps": [
+        "group vs separate scenario?",
+        "Does group affect thresholds?"
+      ],
+      "tags": [
+        "journeys",
+        "group",
+        "login-flow",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-duracao-jornada",
+      "category": "jornadas",
+      "likelihood": 83,
+      "audience": "technical",
+      "question": "How do you measure end-to-end journey duration?",
+      "answer": "Custom Trend with Date.now() at start and end of default function. login-flow.js: loginFlowDuration.add(Date.now() - start) after all groups. authenticated-user.js uses journey_duration. Threshold login_flow_duration p(95)<4000 ms. Captures total latency including sleeps — different from http_req_duration per individual request.",
+      "keyPoints": [
+        "const start = Date.now() at default function start",
+        "Trend: login_flow_duration, journey_duration",
+        "Specific threshold beyond getThresholds('load')",
+        "Includes think time between groups — realistic",
+        "scenario-catalog documents SLO per journey"
+      ],
+      "followUps": [
+        "Journey duration vs sum of http_req_duration?",
+        "How to exclude sleep from Trend?"
+      ],
+      "tags": [
+        "journeys",
+        "duration",
+        "trend",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-journey-http-vs-browser",
+      "category": "jornadas",
+      "likelihood": 84,
+      "audience": "technical",
+      "question": "What is the difference between HTTP journey and browser scenario?",
+      "answer": "Journeys (login-flow.js, authenticated-user.js) use k6/http + group() — fast, many VUs, ramping-vus. Browser (login-page.js) uses k6/browser with real Chromium — heavy, shared-iterations with 2 VUs. HTTP journey tests API+static sequence; browser measures page load, LCP, and DOM interaction with data-testid. Browser does not run in CI smoke.",
+      "keyPoints": [
+        "HTTP journey: GET static → POST login → GET dashboard",
+        "Browser: page.goto, fill, click — Core Web Vitals",
+        "journeys/: HTTP composition; scenarios/browser/: real UI",
+        "browser_page_load p(95)<5000 vs login_flow_duration p95<4000",
+        "Playwright covers functional E2E; k6 browser covers UI perf"
+      ],
+      "followUps": [
+        "When is HTTP journey enough without browser?",
+        "k6 browser vs Playwright trace?"
+      ],
+      "tags": [
+        "journeys",
+        "browser",
+        "http",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-browser-module",
+      "category": "browser",
+      "likelihood": 86,
+      "audience": "technical",
+      "question": "What is the k6 browser module?",
+      "answer": "k6 extension embedding Chromium for UI performance testing — navigation, clicks, form filling with Playwright-style API. login-page.js imports browser from 'k6/browser', opens TestFlow login page, fills fields, and submits. Measures browser_page_load and browser_lcp. Requires native k6 v0.52+ — complements HTTP tests in the suite.",
+      "keyPoints": [
+        "k6/browser: embedded headless Chromium",
+        "Async default function — await page.goto, fill, click",
+        "options.scenarios.browser.type: 'chromium'",
+        "login-page scenario — suite: login-page browser tag",
+        "TestFlow integration: /web/login.html data-testid"
+      ],
+      "followUps": [
+        "Does k6 browser run in parallel with HTTP VUs?",
+        "Firefox/Safari support?"
+      ],
+      "tags": [
+        "browser",
+        "k6/browser",
+        "chromium",
+        "slide",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-browser-poucos-vus",
+      "category": "browser",
+      "likelihood": 82,
+      "audience": "technical",
+      "question": "Why does browser use few VUs?",
+      "answer": "Each browser VU launches a Chromium instance — RAM/CPU consumption orders of magnitude higher than pure HTTP. login-page.js uses vus:2, iterations:4 with shared-iterations (~4 page loads total). Scaling browser VUs like API tests crashes local machine. Realistic modeling: few concurrent UI users vs thousands API-only.",
+      "keyPoints": [
+        "Chromium ~100–300 MB per instance",
+        "shared-iterations limits total iterations, not open loop",
+        "API scenarios: 25–100 VUs — browser: 2 VUs",
+        "CI does not run browser — resource and time",
+        "Playwright parallel workers similar analogy"
+      ],
+      "followUps": [
+        "How many browser VUs in dedicated staging?",
+        "Shared browser pool — possible?"
+      ],
+      "tags": [
+        "browser",
+        "vu",
+        "resources",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-data-testid",
+      "category": "browser",
+      "likelihood": 80,
+      "audience": "technical",
+      "question": "How do you select elements with `data-testid`?",
+      "answer": "k6 browser uses page.locator('[data-testid=\"login-email\"]') — same pattern as TestFlow/Cypress/Playwright. login-page.js: fill email, password, click login-use-api toggle if visible, click login-submit. Stable selectors resist CSS changes. Alignment with testflow-cypress ensures same hooks between functional and perf.",
+      "keyPoints": [
+        "data-testid=\"login-email\", login-password, login-submit",
+        "page.locator().fill(), .click(), .isVisible()",
+        "waitUntil: networkidle on goto",
+        "waitForTimeout(2000) after submit — wait for redirect",
+        "Avoid fragile CSS selectors in load tests"
+      ],
+      "followUps": [
+        "data-testid vs role selectors?",
+        "Element not found — browser timeout?"
+      ],
+      "tags": [
+        "browser",
+        "data-testid",
+        "selectors",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-browser-vs-playwright",
+      "category": "browser",
+      "likelihood": 58,
+      "audience": "technical",
+      "question": "What are browser module limitations vs Playwright?",
+      "answer": "k6 browser covers a Playwright subset — focus on perf metrics, not rich assertions, trace viewer, or multi-browser. No codegen, elaborate fixtures, or mature parallel sharding. Playwright in TestFlow is the full functional suite; k6 browser measures page load under light load. Inferior debugging — use Playwright for functional, k6 for aggregated UI latency.",
+      "keyPoints": [
+        "k6 browser: perf metrics — LCP, page load Trend",
+        "Playwright: asserts, trace, screenshot, multi-browser",
+        "Smaller k6 browser API — evolving rapidly",
+        "Project: Playwright E2E + k6 HTTP load + optional k6 browser",
+        "CI: Playwright functional; k6 browser local only"
+      ],
+      "followUps": [
+        "Will k6 browser replace Playwright?",
+        "How to correlate k6 LCP with Lighthouse?"
+      ],
+      "tags": [
+        "browser",
+        "playwright",
+        "comparison",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-test-report",
+      "category": "relatorios",
+      "likelihood": 87,
+      "audience": "technical",
+      "question": "What does `npm run test:report` generate?",
+      "answer": "Runs scripts/run-all-smoke-report.sh which executes scenarios with ciReport:true via run-k6.sh, collects JSON summaries, and generates interactive site/report/index.html with charts, thresholds, and scenario-catalog.mjs metadata. Used in publish-pages job in k6.yml on main. REPORT_OUTPUT_DIR=site/report in CI. Partial failure tolerated (|| true) unless HTML not generated.",
+      "keyPoints": [
+        "run-all-smoke-report.sh — smoke, load-auth, journeys, spike...",
+        "scenario-catalog ciReport: true filters scenarios",
+        "Output: site/report/index.html + assets",
+        "publish-pages: npm run test:report on main push",
+        "Consumes results/summary-latest.json per scenario"
+      ],
+      "followUps": [
+        "How to add a scenario to CI report?",
+        "test:report vs local K6_DASHBOARD?"
+      ],
+      "tags": [
+        "reports",
+        "test:report",
+        "html",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-web-dashboard",
+      "category": "relatorios",
+      "likelihood": 79,
+      "audience": "technical",
+      "question": "How does the k6 web dashboard work (`K6_DASHBOARD=true`)?",
+      "answer": "K6_DASHBOARD=1 enables real-time web dashboard via run-k6.sh configure_dashboard(). K6_WEB_DASHBOARD=true, host 0.0.0.0, port 5665 (K6_WEB_DASHBOARD_PORT). Exports HTML to results/report-{scenario}.html via K6_WEB_DASHBOARD_EXPORT. Opens browser automatically locally; disabled in CI. Complements InfluxDB/Grafana for quick debugging.",
+      "keyPoints": [
+        "Live: http://localhost:5665 during test run",
+        "Export HTML post-run in results/",
+        "K6_DASHBOARD_OPEN=false in CI",
+        "configure_dashboard() in run-k6.sh",
+        "Real-time VUs, RPS, latency charts"
+      ],
+      "followUps": [
+        "Dashboard vs Grafana — when to use?",
+        "Dashboard export in Docker?"
+      ],
+      "tags": [
+        "reports",
+        "dashboard",
+        "K6_DASHBOARD",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-github-pages",
+      "category": "relatorios",
+      "likelihood": 85,
+      "audience": "technical",
+      "question": "What is published on GitHub Pages?",
+      "answer": "publish-pages job in k6.yml builds full site (npm run pages:build), generates performance report (npm run test:report → site/report/index.html), injects Grafana config (write-grafana-config.mjs), and deploys via actions/deploy-pages. URL: lflucasferreira.github.io/testflow-k6/ with slides, PT/EN docs, HTML report, and optional Grafana Cloud embed.",
+      "keyPoints": [
+        "Trigger: push main — not PR",
+        "site/: index, slides, pt/en docs, report/",
+        "Interactive smoke performance report artifact",
+        "GRAFANA_DASHBOARD_URL vars for embed",
+        "TestFlow service container starts for real report"
+      ],
+      "followUps": [
+        "Does Pages publish manual load results?",
+        "How to protect report in private repo?"
+      ],
+      "tags": [
+        "reports",
+        "github-pages",
+        "publish-pages",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-report-md-vs-html",
+      "category": "relatorios",
+      "likelihood": 76,
+      "audience": "technical",
+      "question": "What is the difference between REPORT.md and report/index.html?",
+      "answer": "REPORT.md (if generated) is a static Markdown summary for README/PR — text with main metrics. report/index.html is an interactive dashboard with per-scenario charts, thresholds pass/fail, stages visualization, and scenario-catalog links. CI publishes HTML on GitHub Pages; Markdown serves quick glance in repo. buildSummary stdout is a third format — console CI log.",
+      "keyPoints": [
+        "HTML: charts, filters, per-scenario navigation",
+        "Markdown: lightweight, versionable, embed in README",
+        "stdout buildSummary: p95, failed rate in job log",
+        "JSON summary-latest.json: machine-readable artifact",
+        "npm run test:report focuses on rich HTML"
+      ],
+      "followUps": [
+        "How to generate REPORT.md automatically?",
+        "Export PDF from HTML report?"
+      ],
+      "tags": [
+        "reports",
+        "REPORT.md",
+        "html",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-influxdb-local",
+      "category": "grafana",
+      "likelihood": 84,
+      "audience": "technical",
+      "question": "How do you stream metrics to local InfluxDB?",
+      "answer": "K6_INFLUXDB=1 enables output via run-k6.sh. Docker compose --profile monitoring starts influxdb:2.7, grafana, and k6-influx. build_k6_args injects -o xk6-influxdb=http://influxdb:8086. Variables K6_INFLUXDB_ORGANIZATION (testflow), BUCKET (k6), TOKEN. Local Grafana :3000 dashboard k6-test-results. Target auto detects local vs cloud.",
+      "keyPoints": [
+        "docker compose --profile monitoring up -d",
+        "run-k6.sh: K6_INFLUXDB=1 npm run test:smoke",
+        "Local addr: http://influxdb:8086 (compose) or localhost:8086",
+        "Grafana datasource provisioned in monitoring/grafana/",
+        "Live dashboard during test — not just post-hoc"
+      ],
+      "followUps": [
+        "InfluxDB 1.x vs 2.x compatibility?",
+        "Local Influx data retention?"
+      ],
+      "tags": [
+        "grafana",
+        "influxdb",
+        "monitoring",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-xk6-output-influxdb",
+      "category": "grafana",
+      "likelihood": 81,
+      "audience": "sdet",
+      "question": "What is xk6-output-influxdb?",
+      "answer": "k6 extension (xk6) adding InfluxDB output to the binary. testflow-k6 builds image testflow-k6-k6-influx:local via docker/k6-influx.Dockerfile with embedded extension. run-k6.sh passes -o xk6-influxdb=${K6_INFLUXDB_ADDR}. Vanilla k6 does not include it — needs custom build or compose k6-influx service.",
+      "keyPoints": [
+        "xk6: Go extension framework for k6",
+        "Default grafana/k6 image: no Influx output",
+        "k6-influx service in docker-compose.yml",
+        "Flag: -o xk6-influxdb=http://host:8086",
+        "Continuous metric stream during run"
+      ],
+      "followUps": [
+        "How to build xk6 locally?",
+        "Other xk6 outputs — Prometheus, Kafka?"
+      ],
+      "tags": [
+        "grafana",
+        "xk6",
+        "influxdb",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-grafana-nao-pages",
+      "category": "grafana",
+      "likelihood": 78,
+      "audience": "technical",
+      "question": "Why does Grafana not run on GitHub Pages?",
+      "answer": "GitHub Pages serves static files (HTML/CSS/JS) — no backend, database, or WebSocket for InfluxDB queries. Grafana requires a server with live datasource. Solution: embed Grafana Cloud iframe (GRAFANA_EMBED vars) in static site via write-grafana-config.mjs, or external link to hosted dashboard. Pages HTML report uses pre-generated JSON summaries, not live Grafana.",
+      "keyPoints": [
+        "Pages: static hosting only — no InfluxDB/Grafana server",
+        "report/index.html: client-side charts from exported JSON",
+        "Grafana Cloud: SaaS with public/anonymous embed URL",
+        "Local dev: docker compose monitoring profile",
+        "vars.GRAFANA_DASHBOARD_URL in publish-pages workflow"
+      ],
+      "followUps": [
+        "Static Grafana snapshot on Pages?",
+        "Self-hosted Grafana on separate VM?"
+      ],
+      "tags": [
+        "grafana",
+        "github-pages",
+        "static",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-grafana-cloud-embed",
+      "category": "grafana",
+      "likelihood": 75,
+      "audience": "technical",
+      "question": "How do you embed Grafana Cloud in the static site?",
+      "answer": "scripts/write-grafana-config.mjs generates config in site/grafana/ with GRAFANA_DASHBOARD_URL and GRAFANA_EMBED from GitHub vars. index.html references iframe or link to K6 Test Results dashboard in Cloud. Enables live visualization of InfluxDB Cloud metrics streamed via K6_INFLUXDB_TARGET=cloud and .env.influx.cloud.",
+      "keyPoints": [
+        "GitHub vars: GRAFANA_DASHBOARD_URL, GRAFANA_EMBED",
+        "write-grafana-config.mjs in publish-pages job",
+        "K6_INFLUXDB_TARGET=cloud + .env.influx.cloud",
+        "Embed iframe in site/docs — reader sees real dashboard",
+        "Local alternative: localhost:3000/d/4sk8QaJVx/k6-test-results"
+      ],
+      "followUps": [
+        "Grafana Cloud embed authentication?",
+        "InfluxDB Cloud cost for hobby project?"
+      ],
+      "tags": [
+        "grafana",
+        "grafana-cloud",
+        "embed",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-workflow-k6-yml",
+      "category": "ci-cd",
+      "likelihood": 92,
+      "audience": "technical",
+      "question": "What runs in the `k6.yml` workflow?",
+      "answer": "Three jobs: test (smoke gate on PR/push — api-health with CI=true, qaschool/testflow:5050 service, upload summary artifact); load-manual (workflow_dispatch — mixed-traffic with chosen profile); publish-pages (push main — build site, npm run test:report, deploy GitHub Pages). Installs k6 via apt, uses secrets.DEMO_PASSWORD, timeout 10–30 min.",
+      "keyPoints": [
+        "Test job: k6 run scenarios/smoke/api-health.js — PR gate",
+        "Service container: qaschool/testflow health-checked",
+        "load-manual: if workflow_dispatch — profile input",
+        "publish-pages: permissions pages:write, id-token: write",
+        "concurrency cancel-in-progress per ref"
+      ],
+      "followUps": [
+        "Why three jobs vs single pipeline?",
+        "How to re-run failed smoke on PR?"
+      ],
+      "tags": [
+        "ci-cd",
+        "k6.yml",
+        "github-actions",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-workflow-pages",
+      "category": "ci-cd",
+      "likelihood": 80,
+      "audience": "technical",
+      "question": "What runs in the `pages.yml` workflow?",
+      "answer": "testflow-k6 currently has no separate pages.yml — publishing is consolidated in the publish-pages job within k6.yml. That job runs npm run pages:build, npm run test:report with TestFlow service, write-grafana-config.mjs, and deploy-pages. Historical docs may reference pages.yml; actual implementation is k6.yml publish-pages on push main.",
+      "keyPoints": [
+        "publish-pages job in .github/workflows/k6.yml",
+        "Node 24, npm ci, k6 apt install",
+        "REPORT_OUTPUT_DIR=site/report",
+        "upload-pages-artifact + deploy-pages@v5",
+        "Environment github-pages with URL output"
+      ],
+      "followUps": [
+        "Pros of separating pages.yml from k6.yml?",
+        "Pages deploy without running k6 — possible?"
+      ],
+      "tags": [
+        "ci-cd",
+        "publish-pages",
+        "github-pages",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-workflow-dispatch-load",
+      "category": "ci-cd",
+      "likelihood": 86,
+      "audience": "technical",
+      "question": "How do you use `workflow_dispatch` for manual load?",
+      "answer": "In k6.yml, on.workflow_dispatch exposes input profile (smoke/load/stress/spike). load-manual job runs if event_name == workflow_dispatch — runs mixed-traffic.js with K6_PROFILE=${{ inputs.profile }}. Timeout 30 min, upload artifact k6-summary-{profile}. Lets QA run load on demand without merge — GitHub Actions UI → Run workflow → choose profile.",
+      "keyPoints": [
+        "Input choice: smoke, load, stress, spike",
+        "Script: scenarios/load/mixed-traffic.js",
+        "Does not run on automatic PR — manual only",
+        "results/ artifact for post-run download",
+        "DEMO_PASSWORD secret required"
+      ],
+      "followUps": [
+        "Add soak to workflow_dispatch?",
+        "Schedule nightly load with cron?"
+      ],
+      "tags": [
+        "ci-cd",
+        "workflow_dispatch",
+        "load-manual",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-ci-secrets",
+      "category": "ci-cd",
+      "likelihood": 88,
+      "audience": "technical",
+      "question": "Which secret is required in CI?",
+      "answer": "DEMO_PASSWORD — password for TestFlow demo user for POST /api/auth/login. Referenced as secrets.DEMO_PASSWORD in test, load-manual, and publish-pages jobs. DEMO_EMAIL uses default demo@automation.io in script. SERVICE_CLIENT_* optional. Configure in GitHub repo Settings → Secrets. Without secret, login fails and checks rate brings down smoke.",
+      "keyPoints": [
+        "secrets.DEMO_PASSWORD in all three k6 jobs",
+        "demo@automation.io — default email in environments.js",
+        "Never hardcode real password in workflow YAML",
+        "Vars (not secrets): GRAFANA_DASHBOARD_URL for Pages",
+        "Rotate secret if exposed — invalidate tokens"
+      ],
+      "followUps": [
+        "Secret per staging/prod environment?",
+        "OIDC instead of long-lived secret?"
+      ],
+      "tags": [
+        "ci-cd",
+        "secrets",
+        "DEMO_PASSWORD",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-vs-jmeter",
+      "category": "comparacoes",
+      "likelihood": 70,
+      "audience": "technical",
+      "question": "k6 vs JMeter — pros and cons?",
+      "answer": "k6: versionable JS scripts, low Go footprint, native thresholds, CI-friendly — used in testflow-k6. JMeter: mature GUI, huge plugin ecosystem, legacy protocols (SOAP, JDBC), heavy JVM threads. k6 better for devops/modern API; JMeter for Java enterprise teams with existing XML investment. testflow-k6 chooses k6 for JS integration with Cypress/Playwright.",
+      "keyPoints": [
+        "k6: goroutines, exit code thresholds, Git-native",
+        "JMeter: .jmx GUI, costly threads, complex reports",
+        "k6 lower learning curve for JS devs",
+        "JMeter: recording proxy, plugin extensibility",
+        "Both open source — k6 Cloud vs BlazeMeter JMeter"
+      ],
+      "followUps": [
+        "Migrate JMeter .jmx to k6?",
+        "JMeter DSL Java vs k6 JS?"
+      ],
+      "tags": [
+        "comparisons",
+        "jmeter",
+        "k6",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-vs-gatling",
+      "category": "comparacoes",
+      "likelihood": 55,
+      "audience": "technical",
+      "question": "k6 vs Gatling?",
+      "answer": "Gatling uses Scala/Kotlin DSL with excellent HTML reports and sophisticated traffic modeling. k6 uses JavaScript with lower curve for web QAs and natural integration with TestFlow JS stack. Gatling JVM consumes more resources; k6 Go engine is lighter. Gatling popular in Scala/Java backend; k6 in startups and GitHub Actions pipelines.",
+      "keyPoints": [
+        "Gatling: Scala DSL, rich built-in reports",
+        "k6: JS, Grafana ecosystem, xk6 extensions",
+        "Gatling: advanced closed/open model",
+        "k6: SLO-first thresholds",
+        "Choice often dictated by team language preference"
+      ],
+      "followUps": [
+        "Gatling front-end vs k6 — comparable?",
+        "Open source Gatling limitations?"
+      ],
+      "tags": [
+        "comparisons",
+        "gatling",
+        "k6",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-vs-locust",
+      "category": "comparacoes",
+      "likelihood": 52,
+      "audience": "technical",
+      "question": "k6 vs Locust?",
+      "answer": "Locust uses Python — @task decorators, web swarm UI, popular in Python/Django teams. k6 JavaScript aligns with testflow-cypress/playwright JS. Locust greenlets vs k6 goroutines — both efficient. k6 thresholds and handleSummary more integrated for CI gates. Locust flexible for complex Python logic; k6 for unified JS pipeline.",
+      "keyPoints": [
+        "Locust: Python, web UI swarm control",
+        "k6: JS, CLI-first, Grafana integration",
+        "Locust: task weighting similar to weightedPick",
+        "k6: native SLO thresholds",
+        "testflow-k6: JS consistency across test stacks"
+      ],
+      "followUps": [
+        "Locust distributed vs k6 execution?",
+        "Hybrid Locust + k6 in same project?"
+      ],
+      "tags": [
+        "comparisons",
+        "locust",
+        "python",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-cloud-vs-self-hosted",
+      "category": "comparacoes",
+      "likelihood": 60,
+      "audience": "technical",
+      "question": "When to choose k6 Cloud vs self-hosted?",
+      "answer": "k6 Cloud (Grafana): managed distributed execution, SaaS dashboards, scaling to 100k+ VUs without own infra. Self-hosted (testflow-k6): k6 CLI local/Docker, InfluxDB+Grafana compose, GitHub Actions — zero cloud cost, full control, internal data. Project demonstrates complete self-hosted; Cloud for teams without ops capacity or geo-distributed tests.",
+      "keyPoints": [
+        "Cloud: managed VUs, billing per VU-hour",
+        "Self-hosted: run-k6.sh, docker compose monitoring",
+        "Cloud: production-scale load without hardware",
+        "Self-hosted: CI smoke + manual dispatch sufficient",
+        "InfluxDB Cloud bridge: .env.influx.cloud in project"
+      ],
+      "followUps": [
+        "k6 Cloud vs Grafana Cloud overlap?",
+        "Data compliance — self-hosted mandatory?"
+      ],
+      "tags": [
+        "comparisons",
+        "k6-cloud",
+        "self-hosted",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-p50-p95-p99",
+      "category": "debugging",
+      "likelihood": 91,
+      "audience": "technical",
+      "question": "How do you interpret p50, p95, p99?",
+      "answer": "Percentiles indicate latency below which X% of requests completed. p50 (median): typical experience. p95: almost everyone except outliers — common SLO (smoke p95<1500). p99: long tail — most affected users. smokeThresholds requires p95<1500 and p99<5000 global. Never use average alone — hides critical outliers.",
+      "keyPoints": [
+        "p50: half of requests faster than this value",
+        "p95: 95% below — main testflow-k6 smoke SLO",
+        "p99: tail — detect severe outliers",
+        "avg<800 smoke — complementary, not substitute for p95",
+        "Minimum samples: smoke CI may have few datapoints"
+      ],
+      "followUps": [
+        "p99 unstable with few samples?",
+        "p95 vs customer-facing SLA?"
+      ],
+      "tags": [
+        "debugging",
+        "percentiles",
+        "p95",
+        "p99",
+        "slide"
+      ]
+    },
+    {
+      "id": "k6-http-req-failed-alto",
+      "category": "debugging",
+      "likelihood": 89,
+      "audience": "technical",
+      "question": "What does high `http_req_failed` indicate?",
+      "answer": "Elevated rate of failed requests — timeouts, connection refused, HTTP 5xx, or status 0. In smoke, threshold rate<0.005 (0.5%). Causes: TestFlow down (localhost:5050), overload under stress, invalid credentials (DEMO_PASSWORD), Docker network (host.docker.internal). CI verifies curl /health before k6. spike/stress tolerate up to 5% failed.",
+      "keyPoints": [
+        "http_req_failed: rate of unsuccessful requests",
+        "Status 0: timeout, connection reset, DNS fail",
+        "Smoke: <0.5% — near zero tolerance",
+        "Verify service container health in CI",
+        "Correlate with checks rate and TestFlow logs"
+      ],
+      "followUps": [
+        "High failed only on auth — hypotheses?",
+        "http_req_failed vs custom spike_failures?"
+      ],
+      "tags": [
+        "debugging",
+        "http_req_failed",
+        "errors",
+        "slide"
+      ]
+    },
+    {
+      "id": "k6-gargalo-auth-users",
+      "category": "debugging",
+      "likelihood": 86,
+      "audience": "technical",
+      "question": "How do you identify bottleneck between auth and users?",
+      "answer": "Compare http_req_duration{endpoint:auth_login} vs {endpoint:users} in smoke/load thresholds. api-auth isolates login with login_duration Trend; api-users isolates GET /api/users with setup token. If auth_login p95>3000 and users p95<800, bottleneck is authentication. mixed-traffic weighted pick mixes both — use tags to filter in summary JSON or Grafana.",
+      "keyPoints": [
+        "Tags endpoint:auth_login vs endpoint:users",
+        "Dedicated scenarios: api-auth.js vs api-users.js",
+        "login_duration p(95)<2000 auth threshold",
+        "users_list_duration p(95)<2000 users threshold",
+        "Grafana split by endpoint tag"
+      ],
+      "followUps": [
+        "Slow auth from password hash — how to confirm?",
+        "DB connection pool vs auth logic?"
+      ],
+      "tags": [
+        "debugging",
+        "bottleneck",
+        "auth",
+        "users",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-degraded-responses",
+      "category": "debugging",
+      "likelihood": 84,
+      "audience": "sdet",
+      "question": "What to analyze in `degraded_responses` during stress?",
+      "answer": "Counter incremented in api-breakpoint.js when getHealth()>3000ms or status≠200, or getUsers()>5000ms or status≠200. Indicates degradation before total failure — knee of curve. Plot degraded_responses rate vs VU stage to identify capacity ceiling. Complement with http_req_duration p95 and http_req_failed — degraded rises before failed explodes.",
+      "keyPoints": [
+        "Counter — not Rate — total degradation sum",
+        "Thresholds health 3s, users 5s — tunable",
+        "Correlate with stage target VUs in breakpoint",
+        "stressThresholds tolerate 5% http_req_failed",
+        "Output: at which VU level degraded spikes"
+      ],
+      "followUps": [
+        "Formal degraded_responses threshold?",
+        "degraded vs slow query log difference?"
+      ],
+      "tags": [
+        "debugging",
+        "degraded_responses",
+        "stress",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-centralizar-checks",
+      "category": "boas-praticas",
+      "likelihood": 83,
+      "audience": "technical",
+      "question": "Why centralize checks in helpers?",
+      "answer": "DRY and consistency: lib/http.js and auth.js ensure same assertion in smoke, load, and stress. Change /health expectation in one place. scenario-catalog SHARED_CHECKS documents contract. Per-tag thresholds depend on tags applied in helpers. Avoids scenario A checking status 200 and scenario B silently accepting 201.",
+      "keyPoints": [
+        "Single source: getHealth, getUsers, login checks",
+        "New scenario inherits correct checks automatically",
+        "Alignment with TestFlow functional tests",
+        "Review focused on helpers — not N scenarios",
+        "Documented exception: api-auth inline checks for metrics"
+      ],
+      "followUps": [
+        "Helper too generic — loses context?",
+        "Parameterized checks per scenario?"
+      ],
+      "tags": [
+        "best-practices",
+        "helpers",
+        "checks",
+        "DRY",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-anti-pattern-urls",
+      "category": "boas-praticas",
+      "likelihood": 85,
+      "audience": "technical",
+      "question": "Anti-pattern: duplicating hardcoded URLs in scenarios.",
+      "answer": "Scattered URLs break when API changes version or path — e.g. http.get('http://localhost:5050/api/users') in 10 files. testflow-k6 solution: lib/endpoints.js + BASE_URL from environments.js. Change /api/v2/users → one edit. Enables BASE_URL staging via env var. Code review should reject URL literals in scenarios/.",
+      "keyPoints": [
+        "endpoints.users.list, endpoints.auth.login",
+        "BASE_URL override: staging, Docker, CI",
+        "grep for 'localhost:5050' should return only config/",
+        "weightedPick and journeys import endpoints",
+        "Future OpenAPI codegen may generate endpoints.js"
+      ],
+      "followUps": [
+        "URLs in template strings — OK?",
+        "Monorepo shared endpoints package?"
+      ],
+      "tags": [
+        "best-practices",
+        "anti-pattern",
+        "endpoints",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-smoke-ci-friendly",
+      "category": "boas-praticas",
+      "likelihood": 88,
+      "audience": "technical",
+      "question": "How do you keep smoke CI-friendly (< 1 min)?",
+      "answer": "ci profile in getProfile(): ~55s total, max 5 VUs. api-health script minimal — 3 endpoints, short sleeps. smoke thresholds strict but achievable. Avoid soak/stress in test job. Service container health-start-period 90s counts toward 10min job timeout. Lightweight --summary-export JSON. No InfluxDB/dashboard in CI smoke.",
+      "keyPoints": [
+        "CI=true → profiles.ci automatic",
+        "api-health: health + users + login — essential coverage",
+        "timeout-minutes: 10 job — margin for health wait",
+        "No browser, no 30m soak",
+        "cancel-in-progress concurrency — avoid queue"
+      ],
+      "followUps": [
+        "Is 90s smoke still acceptable?",
+        "Parallelize smoke with unit tests job?"
+      ],
+      "tags": [
+        "best-practices",
+        "smoke",
+        "ci",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-nao-logar-tokens",
+      "category": "boas-praticas",
+      "likelihood": 75,
+      "audience": "technical",
+      "question": "Should you log tokens or passwords in k6?",
+      "answer": "Never. console.log(token) or password appear in public CI logs, artifacts, and Grafana. testflow-k6 uses __ENV for credentials — does not print login payload. GitHub Actions logs are visible to the team. If debug needed, log only hash/truncated or use ephemeral local env. secrets.DEMO_PASSWORD never echoed in workflow.",
+      "keyPoints": [
+        "CI logs public within repo org",
+        "check() failure message — do not include body with token",
+        "buildSummary does not export credentials",
+        "Artifacts summary JSON — metrics only",
+        "Rotate credential if accidental leak"
+      ],
+      "followUps": [
+        "Mask token in debug mode?",
+        "GitHub secret scanning — DEMO_PASSWORD?"
+      ],
+      "tags": [
+        "best-practices",
+        "security",
+        "credentials",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-ambiente-compartilhado",
+      "category": "boas-praticas",
+      "likelihood": 68,
+      "audience": "technical",
+      "question": "How do you prevent load tests from destroying a shared environment?",
+      "answer": "Restrict stress/spike/soak to dedicated environments — never shared staging without coordination. CI runs smoke only (5 VUs). workflow_dispatch load requires conscious action. Rate limit in scripts with sleep/thinkTime. Communicate test window to team. Use controlled K6_PROFILE — breakpoint 125 VUs only in isolated env. Monitor degraded_responses and abort manually if needed.",
+      "keyPoints": [
+        "Smoke only in CI — qaschool/testflow container",
+        "Manual load: explicit workflow_dispatch",
+        "Dedicated environment perf.testflow.internal",
+        "Never 30m soak on shared staging",
+        "SRE coordination before spike in pre-prod"
+      ],
+      "followUps": [
+        "Feature flag to disable load in prod?",
+        "Circuit breaker in k6 script?"
+      ],
+      "tags": [
+        "best-practices",
+        "environment",
+        "load",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-smoke-falha-ci",
+      "category": "cenarios",
+      "likelihood": 90,
+      "audience": "technical",
+      "question": "Smoke passes locally but fails in CI — what to investigate?",
+      "answer": "Checklist: CI=true activates ci profile (5 VUs vs 2 local) — same thresholds but different sample. TestFlow service container health — curl /health step. secrets.DEMO_PASSWORD configured? BASE_URL http://localhost:5050 on runner. Cold start 90s start-period — app not ready. ubuntu runner resource limits vs local Mac. p95 timing flake — review smokeThresholds margin.",
+      "keyPoints": [
+        "Verify 'Verify TestFlow is reachable' step",
+        "Compare results/summary.json local vs CI artifact",
+        "CI profile: more VUs — may expose auth race",
+        "GitHub Actions limited resources — higher latency",
+        "Re-run job — flake vs real regression"
+      ],
+      "followUps": [
+        "continue-on-error on health check — risk?",
+        "Service container vs manual docker run?"
+      ],
+      "tags": [
+        "scenarios",
+        "ci",
+        "smoke",
+        "debugging",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-latencia-linear-vus",
+      "category": "cenarios",
+      "likelihood": 65,
+      "audience": "technical",
+      "question": "Latency rises linearly with VUs — what is the next step?",
+      "answer": "Behavior indicates proportional saturation — possibly single-threaded bottleneck, limited DB pool, or CPU bound. Next steps: profile app (APM), correlate auth vs users tags, run api-auth and api-users in isolation, breakpoint test for knee point, review infra scaling. Document VU count vs p95 curve for capacity plan. Do not blindly increase VUs — investigate root cause.",
+      "keyPoints": [
+        "Linear p95 vs VUs → probable resource contention",
+        "api-breakpoint identifies exact level",
+        "Separate scenarios isolate endpoint bottleneck",
+        "Grafana InfluxDB: visualize trend during ramp",
+        "Horizontal scaling vs code optimization"
+      ],
+      "followUps": [
+        "Linear until N VUs then cliff — what does it mean?",
+        "Load test on hardware equal to production?"
+      ],
+      "tags": [
+        "scenarios",
+        "latency",
+        "capacity",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-propor-slos-endpoint",
+      "category": "cenarios",
+      "likelihood": 82,
+      "audience": "technical",
+      "question": "How do you propose SLOs for a new endpoint?",
+      "answer": "Baseline: run smoke api-health after deploy in staging, measure current p95 without load. Load test api-users or dedicated scenario under load profile. Add threshold in config/thresholds.js with endpoint:name tag and 20% margin above baseline. Align with Cypress E2E timeout. Document in scenario-catalog THRESHOLD_PROFILES. Iterate after production feedback.",
+      "keyPoints": [
+        "1. Measure baseline p95/p99 in smoke",
+        "2. Load test — observe degradation",
+        "3. threshold = baseline * 1.2 under load",
+        "4. Tag endpoint in lib/http.js helper",
+        "5. PR with thresholds.js + scenario if needed"
+      ],
+      "followUps": [
+        "Too aggressive SLO — CI flake?",
+        "Batch vs realtime endpoint — different SLO?"
+      ],
+      "tags": [
+        "scenarios",
+        "slo",
+        "threshold",
+        "project"
+      ]
+    },
+    {
+      "id": "k6-10000-vus",
+      "category": "cenarios",
+      "likelihood": 62,
+      "audience": "technical",
+      "question": "Product asks for 10,000 VUs — how do you respond realistically?",
+      "answer": "Educate about cost, infra, and objective: 10k VUs requires k6 Cloud cluster or distributed fleet — not laptop or GitHub Actions. Ask: expected real traffic? RPS target? Infra budget? Propose incremental test: smoke 5 → load 25 → breakpoint find knee → extrapolate with APM. testflow-k6 demonstrates methodology up to ~125 local VUs; scale-out is separate infra project.",
+      "keyPoints": [
+        "10k VUs ≠ always 10k real simultaneous users",
+        "GitHub Actions max ~hundreds of practical VUs",
+        "k6 Cloud or k6 operator Kubernetes for scale",
+        "Breakpoint data extrapolates with caveats",
+        "Product goal: RPS or concurrent users — clarify"
+      ],
+      "followUps": [
+        "Estimated k6 Cloud cost for 10k VUs?",
+        "Why geo-distributed load?"
+      ],
+      "tags": [
+        "scenarios",
+        "capacity",
+        "stakeholder",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-screening-experiencia-carga",
+      "category": "screening",
+      "likelihood": 88,
+      "audience": "hr",
+      "question": "Have you run load tests in production or staging?",
+      "answer": "Expected honest answer: most run dedicated staging/pre-prod; production rare and controlled. testflow-k6 exemplifies local/staging with qaschool/testflow. Mention types executed (CI smoke, manual load dispatch), tools, and outcomes (SLO defined, bottleneck found). Red flag: never ran anything; green: clear methodology and caution with prod.",
+      "keyPoints": [
+        "Dedicated staging preferable — prod only exception",
+        "testflow-k6: CI smoke + load workflow_dispatch",
+        "Experience: interpret p95, thresholds, artifacts",
+        "Team coordination before destructive test",
+        "Honesty > inflating experience"
+      ],
+      "followUps": [
+        "What is the highest VU count you executed?",
+        "How did you get approval for staging test?"
+      ],
+      "tags": [
+        "screening",
+        "experience",
+        "load",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-screening-ferramentas",
+      "category": "screening",
+      "likelihood": 85,
+      "audience": "hr",
+      "question": "Which performance tools do you know besides k6?",
+      "answer": "Assess breadth: JMeter, Gatling, Locust, Artillery, k6, BlazeMeter, LoadRunner. Depth in at least one. testflow-k6 chooses k6 for JS alignment — candidate may compare trade-offs. Bonus: APM (Datadog, New Relic), Grafana, InfluxDB from project monitoring profile.",
+      "keyPoints": [
+        "JMeter/Locust/Gatling — basic comparison expected",
+        "CI integration knowledge — not just GUI tools",
+        "APM complements load test — does not replace",
+        "testflow-k6 stack: k6 + InfluxDB + Grafana",
+        "Willingness to learn k6 if only JMeter — OK with solid fundamentals"
+      ],
+      "followUps": [
+        "Why would you migrate to or use k6?",
+        "Favorite tool and why?"
+      ],
+      "tags": [
+        "screening",
+        "tools",
+        "jmeter",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-screening-threshold-stakeholder",
+      "category": "screening",
+      "likelihood": 90,
+      "audience": "hr",
+      "question": "How would you explain threshold to a non-technical stakeholder?",
+      "answer": "Threshold is an automatic pass/fail target — e.g. '99% of logins complete in less than 2 seconds'. Analogy: passing grade on a test. If violated, pipeline alerts before users complain. testflow-k6 CI smoke: 'app is fast enough to merge'. Avoid p95 jargon initially — use '95 out of every 100 requests'.",
+      "keyPoints": [
+        "Analogy: red line / minimum grade",
+        "Concrete example: login < 2s for 99% of users",
+        "Benefit: detect slowness before production",
+        "CI smoke gate — business language: quality gate",
+        "Relate to user experience, not technical ms"
+      ],
+      "followUps": [
+        "Stakeholder asks 100% requests < 1s — response?",
+        "How to show CI smoke value in a meeting?"
+      ],
+      "tags": [
+        "screening",
+        "threshold",
+        "communication",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-screening-metrica-prioritaria",
+      "category": "screening",
+      "likelihood": 87,
+      "audience": "hr",
+      "question": "Which metric would you prioritize: p95, throughput, or error rate?",
+      "answer": "Depends on context — mature answer recognizes trade-offs. UX-facing APIs: p95 latency first (smokeThresholds p95<1500). High availability: error rate (http_req_failed<0.01). Capacity planning: throughput (http_reqs/s) + breakpoint. testflow-k6 prioritizes p95 + error rate + checks rate in CI smoke. Throughput alone ignores slow users.",
+      "keyPoints": [
+        "p95: typical user experience under load",
+        "error rate: reliability — smoke <0.5%",
+        "throughput: capacity — stress/breakpoint context",
+        "Project: checks rate>0.99 + p95 + failed rate trio",
+        "Product SLI defines priority — not dogma"
+      ],
+      "followUps": [
+        "p99 vs p95 for SLA contract?",
+        "High throughput with bad p95 — acceptable?"
+      ],
+      "tags": [
+        "screening",
+        "metrics",
+        "p95",
+        "extra"
+      ]
+    },
+    {
+      "id": "k6-screening-pipeline-ci",
+      "category": "screening",
+      "likelihood": 92,
+      "audience": "hr",
+      "question": "At which CI pipeline stage does performance testing fit?",
+      "answer": "Perf smoke on every PR — k6.yml test job runs api-health before merge (~1 min gate). Load/stress manual post-merge or workflow_dispatch — does not block PR. publish-pages on main generates historical report. Shift-left light model + scheduled deep test. Aligned with testflow-k6: fail fast smoke, heavy load on demand.",
+      "keyPoints": [
+        "PR: k6 smoke gate — early perf regression",
+        "Main: Pages report + artifact history",
+        "Load: manual workflow_dispatch — QA trigger",
+        "Optional nightly: soak/stress in dedicated env",
+        "Does not replace unit/E2E — additional layer"
+      ],
+      "followUps": [
+        "Load test blocking release — good idea?",
+        "Where E2E vs k6 smoke in pipeline order?"
+      ],
+      "tags": [
+        "screening",
+        "ci",
+        "pipeline",
+        "project"
+      ]
+    }
+  ]
+}

@@ -2,7 +2,8 @@
 
 > Banco de perguntas para entrevistas com recrutadores técnicos, QA leads, SDETs e engenheiros de software.  
 > Cobertura baseada no conteúdo dos slides (`docs/slides/index.html`), na suíte **testflow-k6** e em tópicos frequentes em empresas brasileiras e internacionais.  
-> **Legenda:** `[SLIDE]` = abordado na apresentação · `[PROJETO]` = presente na suíte TestFlow · `[EXTRA]` = comum em entrevistas, fora dos slides/projeto.
+> **Legenda:** `[SLIDE]` = abordado na apresentação · `[PROJETO]` = presente na suíte TestFlow · `[EXTRA]` = comum em entrevistas, fora dos slides/projeto.  
+> **JSON (103 perguntas com respostas):** PT [`k6-technical-interview-questions.json`](k6-technical-interview-questions.json) · EN [`k6-technical-interview-questions-en.json`](k6-technical-interview-questions-en.json) · fonte canônica no curriculum: [`k6-qa-pt.json`](https://github.com/lflucasferreira/curriculum/blob/main/src/data/k6-qa-pt.json) / [`k6-qa-en.json`](https://github.com/lflucasferreira/curriculum/blob/main/src/data/k6-qa-en.json). Regenerar: `python3 curriculum/scripts/generate-k6-qa.py` e `python3 curriculum/scripts/generate-k6-qa-en.py`.
 
 ---
 
@@ -275,6 +276,8 @@
 ---
 
 ## Respostas de referência (amostra)
+
+> Respostas completas para todas as 103 perguntas estão nos arquivos JSON linkados no cabeçalho e na página [`/interview/k6`](https://lflucasferreira.github.io/curriculum/interview/k6) do portfolio.
 
 <details>
 <summary>1.4 — Diferença entre load, stress, spike e soak</summary>
