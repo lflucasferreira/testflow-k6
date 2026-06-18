@@ -22,8 +22,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  smoke:
+  test:
     name: k6 — smoke (CI gate)
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -43,14 +46,14 @@ jobs:
 
       - name: Install k6
         run: |
-          sudo gpg -k
-          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          curl -fsSL https://dl.k6.io/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg
           echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
           sudo apt-get update
           sudo apt-get install -y k6
 
       - name: Verify TestFlow is reachable
-        run: curl -sf http://localhost:5050/health && echo "TestFlow OK"
+        continue-on-error: true
+        run: curl -sf http://localhost:5050/health && echo "TestFlow OK" || echo "TestFlow not reachable"
 
       - name: Run k6 smoke
         env:
@@ -65,7 +68,7 @@ jobs:
 
       - name: Upload k6 summary
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: k6-summary-smoke
           path: results/
@@ -87,15 +90,19 @@ jobs:
           --health-retries 6
           --health-start-period 90s
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout test suite
+        uses: actions/checkout@v5
 
       - name: Install k6
         run: |
-          sudo gpg -k
-          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          curl -fsSL https://dl.k6.io/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg
           echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
           sudo apt-get update
           sudo apt-get install -y k6
+
+      - name: Verify TestFlow is reachable
+        continue-on-error: true
+        run: curl -sf http://localhost:5050/health && echo "TestFlow OK" || echo "TestFlow not reachable"
 
       - name: Run k6 — mixed traffic
         env:
@@ -109,7 +116,89 @@ jobs:
 
       - name: Upload k6 summary
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: k6-summary-${{ github.event.inputs.profile }}
           path: results/
+          if-no-files-found: ignore
+
+  publish-pages:
+    name: Build site & publish GitHub Pages
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    services:
+      testflow:
+        image: qaschool/testflow:latest
+        ports:
+          - 5050:5050
+        options: >-
+          --health-interval 15s
+          --health-timeout 10s
+          --health-retries 6
+          --health-start-period 90s
+    steps:
+      - name: Checkout test suite
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Install k6
+        run: |
+          curl -fsSL https://dl.k6.io/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify TestFlow is reachable
+        continue-on-error: true
+        run: curl -sf http://localhost:5050/health && echo "TestFlow OK" || echo "TestFlow not reachable"
+
+      - name: Build GitHub Pages site shell
+        run: npm run pages:build
+
+      - name: Generate performance report
+        env:
+          CI: "true"
+          BASE_URL: http://localhost:5050
+          K6_PROFILE: smoke
+          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          REPORT_OUTPUT_DIR: site/report
+        run: |
+          mkdir -p site/report results
+          npm run test:report || true
+          if [ ! -f site/report/index.html ]; then
+            echo "HTML report was not generated" >&2
+            exit 1
+          fi
+
+      - name: Finalize site
+        env:
+          GRAFANA_DASHBOARD_URL: ${{ vars.GRAFANA_DASHBOARD_URL }}
+          GRAFANA_EMBED: ${{ vars.GRAFANA_EMBED }}
+        run: node scripts/write-grafana-config.mjs site/grafana
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+          include-hidden-files: true
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

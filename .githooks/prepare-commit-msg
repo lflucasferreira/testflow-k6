@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Cursor may inject Co-authored-by trailers; strip them before commit-msg validation.
+if [ -f "$1" ]; then
+  sed -i '' '/^[Cc]o-[Aa]uthored-[Bb]y:/d' "$1"
+fi

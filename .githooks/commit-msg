@@ -1,7 +1,6 @@
-#!/bin/bash
-# Remove AI co-author trailers (Cursor Agent, Claude Code, etc.).
-sed -i '' \
-  -e '/cursoragent@cursor\.com/d' \
-  -e '/anthropic\.com/d' \
-  -e '/^[Cc]o-[Aa]uthored-[Bb]y:.*[Cc]laude/d' \
-  "$1"
+#!/usr/bin/env bash
+set -euo pipefail
+
+source "$(dirname "$0")/lib/author-policy.sh"
+
+author_policy_check_message_file "$1"

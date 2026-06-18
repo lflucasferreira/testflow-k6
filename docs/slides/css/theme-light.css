@@ -1,0 +1,63 @@
+/**
+ * Light theme overrides — slides & guia (k6 purple branding)
+ */
+
+[data-theme='light'] .reveal-viewport {
+  --pw-code-bg: #f4f2ff;
+  --pw-code-text: #1a2332;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(90, 69, 214, 0.1), transparent),
+    radial-gradient(circle at 100% 100%, rgba(90, 69, 214, 0.05), transparent 40%);
+}
+
+[data-theme='light'] .hero h1,
+[data-theme='light'] .hero-logo .wordmark,
+[data-theme='light'] .slide-title h1,
+[data-theme='light'] .slide-title .wordmark {
+  background: linear-gradient(135deg, #1a2332 0%, var(--pw-green) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme='light'] .slide-title .subtitle {
+  color: var(--pw-text);
+  opacity: 1;
+}
+
+[data-theme='light'] pre,
+[data-theme='light'] .reveal pre,
+[data-theme='light'] .terminal {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+}
+
+[data-theme='light'] .reveal pre,
+[data-theme='light'] .reveal .terminal {
+  box-shadow: 0 8px 32px var(--pw-shadow);
+}
+
+[data-theme='light'] .reveal .terminal {
+  box-shadow: none;
+}
+
+[data-theme='light'] .reveal .terminal-header {
+  background: var(--pw-code-bg);
+  border-bottom-color: var(--pw-border);
+}
+
+[data-theme='light'] .callout {
+  color: var(--pw-muted);
+}
+
+/* Dark mode — stronger cover contrast */
+[data-theme='dark'] .slide-title .subtitle {
+  color: #d8e0ea;
+  opacity: 1;
+}
+
+[data-theme='dark'] .slide-title .badge,
+[data-theme='dark'] .reveal .badge {
+  color: #c4b5ff;
+  background: var(--pw-surface-2);
+  border-color: rgba(125, 100, 255, 0.45);
+}

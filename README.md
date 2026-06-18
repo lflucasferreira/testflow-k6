@@ -87,7 +87,7 @@ Generates:
 - `results/summary-latest.json` — machine-readable summary
 - `results/runs/<run-id>-*.json` — raw k6 exports
 
-On every push to `main`, the HTML report is published to **GitHub Pages** (workflow: `.github/workflows/pages.yml`).
+On every push to `main`, the HTML report is published to **GitHub Pages** (job `publish-pages` in `.github/workflows/k6.yml`).
 
 ```bash
 npm run test:report    # run suite + generate HTML
@@ -119,8 +119,7 @@ testflow-k6/
 │   └── k6-influx.Dockerfile  # xk6 + influxdb output extension
 ├── docker-compose.yml
 └── .github/workflows/
-    ├── k6.yml        # CI smoke gate + manual load
-    └── pages.yml     # Hub + performance report → GitHub Pages
+    └── k6.yml        # CI smoke gate, manual load, GitHub Pages report
 ```
 
 ## Prerequisites
@@ -354,11 +353,11 @@ Tune in `config/thresholds.js` and `config/profiles.js`.
 
 Workflows:
 
-| Workflow | Trigger | What it runs |
-|----------|---------|--------------|
-| `k6.yml` — smoke | push / PR | Single smoke scenario — fast CI gate (~1 min) |
-| `k6.yml` — load-manual | workflow_dispatch | User-selected profile (load / stress / spike) |
-| `pages.yml` | push to `main` | Full 7-scenario report → **GitHub Pages HTML** |
+| Job | Trigger | What it runs |
+|-----|---------|--------------|
+| `test` | push / PR | Single smoke scenario — fast CI gate (~1 min) |
+| `load-manual` | workflow_dispatch | User-selected profile (load / stress / spike) |
+| `publish-pages` | push to `main` | Full 7-scenario report → **GitHub Pages HTML** |
 
 Set repository secret `DEMO_PASSWORD` for CI (same as Cypress/Playwright).
 
@@ -375,7 +374,7 @@ The site is a **hub + CI-generated report**, not static files on `main` alone:
 
 ### Grafana on GitHub Pages
 
-**GitHub Pages is static** — InfluxDB and Grafana **do not run in CI** or on Pages. The CI workflow (`pages.yml`) does **not** start Docker Grafana; it generates the HTML performance report and publishes static files.
+**GitHub Pages is static** — InfluxDB and Grafana **do not run in CI** or on Pages. The `publish-pages` job in `k6.yml` does **not** start Docker Grafana; it generates the HTML performance report and publishes static files.
 
 What you get on Pages today:
 
@@ -402,17 +401,15 @@ Without `GRAFANA_DASHBOARD_URL`, `/grafana/` explains the limitation and redirec
 1. Open the repo on GitHub → **Settings** → **Pages**
 2. Under **Build and deployment**, set **Source** to **GitHub Actions** (not “Deploy from branch”)
 3. Add secret **`DEMO_PASSWORD`** under **Settings → Secrets and variables → Actions** (value: `Demo123!` or your TestFlow password)
-4. Push to `main` — workflow **Deploy Performance Report** (`pages.yml`) runs automatically
+4. Push to `main` — workflow **k6 Performance** runs `publish-pages` automatically
 5. First run may ask to create the **`github-pages`** environment — approve it when prompted
 
 **Verify:**
 
-- **Actions** tab → **Deploy Performance Report** → green check on both jobs (`report` + `deploy`)
+- **Actions** tab → **k6 Performance** → green check on job `publish-pages`
 - Open https://lflucasferreira.github.io/testflow-k6/ — hub with cards
 - Click **Grafana Dashboard** → `/grafana/` → CI report (or Grafana Cloud if configured)
 - Click **Performance Report** → `/report/` with PASS/FAIL per scenario
-
-**Manual re-deploy:** Actions → **Deploy Performance Report** → **Run workflow**.
 
 **Local preview (hub only):**
 

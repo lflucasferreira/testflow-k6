@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+source "$(dirname "$0")/lib/author-policy.sh"
+
+zero="0000000000000000000000000000000000000000"
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue
+
+  if [ "$remote_sha" = "$zero" ]; then
+    range="$local_sha"
+  else
+    range="${remote_sha}..${local_sha}"
+  fi
+
+  while IFS= read -r sha; do
+    [ -z "$sha" ] && continue
+    author_policy_check_commit "$sha"
+  done < <(git rev-list "$range" 2>/dev/null || true)
+done
+
+exit 0

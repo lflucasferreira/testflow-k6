@@ -1,38 +1,51 @@
 /**
  * k6-branded Reveal.js theme
- * Colors: #7D64FF (primary), #5A45E6 (accent), #080A0B (bg)
- * Same layout as testflow-cypress theme-cypress.css
+ * Semantic colors: css/themes.css
  */
 
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --k6-accent: #7d64ff;
-  --k6-accent-dark: #5a45e6;
-  --k6-accent-glow: rgba(125, 100, 255, 0.35);
-  --cypress-bg: #080a0b;
-  --cypress-surface: #111820;
-  --cypress-surface-2: #1a2332;
-  --cypress-border: #2a3544;
-  --cypress-text: #e8edf2;
-  --cypress-muted: #8b9cb0;
-  --cypress-code-bg: #0d1117;
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
 .reveal-viewport {
-  background: var(--cypress-bg);
+  background: var(--pw-bg);
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(125, 100, 255, 0.12), transparent),
-    radial-gradient(circle at 100% 100%, rgba(90, 69, 230, 0.06), transparent 40%);
+    radial-gradient(ellipse 80% 50% at 50% -20%, var(--pw-gradient-a), transparent),
+    radial-gradient(circle at 100% 100%, var(--pw-gradient-b), transparent 40%);
+  height: 100%;
+}
+
+html.reveal-full-page,
+html.reveal-full-page body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
 }
 
 .reveal {
+  height: 100%;
   font-family: var(--font-sans);
   font-size: 32px;
   font-weight: 400;
-  color: var(--cypress-text);
+  color: var(--pw-text);
+}
+
+.reveal.center .slides section {
+  height: 100%;
+  top: 0 !important;
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.reveal.center .slides section > * {
+  flex-shrink: 0;
 }
 
 .reveal h1,
@@ -41,7 +54,7 @@
 .reveal h4 {
   font-family: var(--font-sans);
   font-weight: 700;
-  color: var(--cypress-text);
+  color: var(--pw-text);
   text-transform: none;
   letter-spacing: -0.02em;
   line-height: 1.15;
@@ -49,7 +62,7 @@
 
 .reveal h1 {
   font-size: 2.4em;
-  background: linear-gradient(135deg, #fff 0%, var(--k6-accent) 100%);
+  background: linear-gradient(135deg, var(--pw-h1-gradient-start) 0%, var(--pw-green) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -57,7 +70,7 @@
 
 .reveal h2 {
   font-size: 1.6em;
-  color: var(--k6-accent);
+  color: var(--pw-green);
   margin-bottom: 0.6em;
 }
 
@@ -67,36 +80,36 @@
   width: 48px;
   height: 3px;
   margin-top: 0.35em;
-  background: linear-gradient(90deg, var(--k6-accent), transparent);
+  background: linear-gradient(90deg, var(--pw-green), transparent);
   border-radius: 2px;
 }
 
 .reveal h3 {
   font-size: 1.1em;
-  color: var(--cypress-muted);
+  color: var(--pw-muted);
   font-weight: 500;
 }
 
 .reveal p,
 .reveal li {
   line-height: 1.55;
-  color: var(--cypress-text);
+  color: var(--pw-text);
 }
 
 .reveal strong {
-  color: var(--k6-accent);
+  color: var(--pw-green);
   font-weight: 600;
 }
 
 .reveal a {
-  color: var(--k6-accent);
+  color: var(--pw-green);
   text-decoration: none;
   border-bottom: 1px solid transparent;
   transition: border-color 0.2s;
 }
 
 .reveal a:hover {
-  border-bottom-color: var(--k6-accent);
+  border-bottom-color: var(--pw-green);
 }
 
 .reveal ul,
@@ -109,17 +122,17 @@
 }
 
 .reveal li::marker {
-  color: var(--k6-accent);
+  color: var(--pw-green);
 }
 
 .reveal code {
   font-family: var(--font-mono);
   font-size: 0.82em;
-  background: var(--cypress-surface-2);
-  color: var(--k6-accent);
+  background: var(--pw-surface-2);
+  color: var(--pw-green);
   padding: 0.12em 0.4em;
   border-radius: 4px;
-  border: 1px solid var(--cypress-border);
+  border: 1px solid var(--pw-border);
 }
 
 .reveal pre {
@@ -127,13 +140,13 @@
   margin: 0.8em 0;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
   border-radius: 10px;
-  border: 1px solid var(--cypress-border);
+  border: 1px solid var(--pw-border);
 }
 
 .reveal pre code {
   display: block;
   padding: 1em 1.2em;
-  background: var(--cypress-code-bg);
+  background: var(--pw-code-bg);
   color: #c9d1d9;
   border: none;
   font-size: 0.55em;
@@ -148,7 +161,7 @@
 }
 
 .reveal .hljs-string {
-  color: var(--k6-accent);
+  color: var(--pw-green);
 }
 
 .reveal .hljs-function,
@@ -161,19 +174,19 @@
 }
 
 .reveal .progress span {
-  background: linear-gradient(90deg, var(--k6-accent-dark), var(--k6-accent));
+  background: linear-gradient(90deg, var(--pw-green-dark), var(--pw-green));
 }
 
 .reveal .controls button {
-  color: var(--k6-accent);
+  color: var(--pw-green);
 }
 
 .reveal .slide-number {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--cypress-muted);
-  background: var(--cypress-surface);
-  border: 1px solid var(--cypress-border);
+  color: var(--pw-muted);
+  background: var(--pw-surface);
+  border: 1px solid var(--pw-border);
   border-radius: 4px;
   padding: 4px 8px;
 }
@@ -184,7 +197,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--k6-accent-dark), var(--k6-accent), transparent);
+  background: linear-gradient(90deg, var(--pw-green-dark), var(--pw-green), transparent);
   z-index: 20;
   pointer-events: none;
 }
@@ -192,6 +205,13 @@
 /* Title slide */
 .slide-title {
   text-align: center;
+}
+
+.slide-title h1 {
+  background: linear-gradient(135deg, var(--pw-h1-gradient-start) 0%, var(--pw-green) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .slide-title .logo-wrap {
@@ -205,14 +225,14 @@
 .slide-title .logo-wrap img {
   width: 88px;
   height: 88px;
-  filter: drop-shadow(0 0 24px var(--k6-accent-glow));
+  filter: drop-shadow(0 0 24px var(--pw-green-glow));
 }
 
 .slide-title .wordmark {
   font-size: 3.2em;
   font-weight: 700;
   letter-spacing: -0.04em;
-  background: linear-gradient(135deg, #fff 30%, var(--k6-accent) 100%);
+  background: linear-gradient(135deg, var(--pw-h1-gradient-start) 30%, var(--pw-green) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -220,19 +240,21 @@
 
 .slide-title .subtitle {
   font-size: 0.95em;
-  color: var(--cypress-muted);
+  color: var(--pw-text);
+  opacity: 0.9;
   margin-top: 0.5em;
 }
 
-.slide-title .badge {
+.slide-title .badge,
+.reveal .badge {
   display: inline-block;
   margin-top: 1.5em;
   padding: 0.35em 1em;
   font-family: var(--font-mono);
   font-size: 0.45em;
-  color: var(--k6-accent);
-  background: var(--cypress-surface);
-  border: 1px solid var(--cypress-border);
+  color: var(--pw-green);
+  background: var(--pw-surface);
+  border: 1px solid var(--pw-border);
   border-radius: 999px;
 }
 
@@ -246,8 +268,8 @@
 }
 
 .feature-card {
-  background: var(--cypress-surface);
-  border: 1px solid var(--cypress-border);
+  background: var(--pw-surface);
+  border: 1px solid var(--pw-border);
   border-radius: 10px;
   padding: 1rem 1.2rem;
   text-align: left;
@@ -255,8 +277,8 @@
 }
 
 .feature-card:hover {
-  border-color: var(--k6-accent);
-  box-shadow: 0 0 20px var(--k6-accent-glow);
+  border-color: var(--pw-green);
+  box-shadow: 0 0 20px var(--pw-green-glow);
 }
 
 .feature-card .icon {
@@ -265,13 +287,13 @@
 }
 
 .feature-card h4 {
-  color: var(--k6-accent);
+  color: var(--pw-green);
   font-size: 1em;
   margin: 0 0 0.4em;
 }
 
 .feature-card p {
-  color: var(--cypress-muted);
+  color: var(--pw-muted);
   font-size: 0.9em;
   margin: 0;
   line-height: 1.4;
@@ -293,10 +315,10 @@
   gap: 1rem;
   margin-bottom: 1rem;
   padding: 0.8rem 1rem;
-  background: var(--cypress-surface);
-  border: 1px solid var(--cypress-border);
+  background: var(--pw-surface);
+  border: 1px solid var(--pw-border);
   border-radius: 8px;
-  border-left: 3px solid var(--k6-accent);
+  border-left: 3px solid var(--pw-green);
 }
 
 .steps li::before {
@@ -310,8 +332,8 @@
   font-family: var(--font-mono);
   font-size: 0.85em;
   font-weight: 600;
-  color: var(--cypress-bg);
-  background: var(--k6-accent);
+  color: var(--pw-bg);
+  background: var(--pw-green);
   border-radius: 50%;
 }
 
@@ -326,8 +348,8 @@
 
 /* Terminal block */
 .terminal {
-  background: var(--cypress-code-bg);
-  border: 1px solid var(--cypress-border);
+  background: var(--pw-code-bg);
+  border: 1px solid var(--pw-border);
   border-radius: 10px;
   overflow: hidden;
   text-align: left;
@@ -340,8 +362,8 @@
   align-items: center;
   gap: 6px;
   padding: 0.6em 1em;
-  background: var(--cypress-surface);
-  border-bottom: 1px solid var(--cypress-border);
+  background: var(--pw-surface);
+  border-bottom: 1px solid var(--pw-border);
 }
 
 .terminal-dot {
@@ -361,7 +383,7 @@
 }
 
 .terminal-body .prompt {
-  color: var(--k6-accent);
+  color: var(--pw-green);
 }
 
 .terminal-body .comment {
@@ -379,18 +401,18 @@
 .compare-table th,
 .compare-table td {
   padding: 0.6em 1em;
-  border: 1px solid var(--cypress-border);
+  border: 1px solid var(--pw-border);
   text-align: left;
 }
 
 .compare-table th {
-  background: var(--cypress-surface);
-  color: var(--k6-accent);
+  background: var(--pw-surface);
+  color: var(--pw-green);
   font-weight: 600;
 }
 
 .compare-table td {
-  background: var(--cypress-surface-2);
+  background: var(--pw-surface-2);
 }
 
 .compare-table tr:hover td {
@@ -417,10 +439,10 @@
 .cmd-tag {
   font-family: var(--font-mono);
   padding: 0.25em 0.65em;
-  background: var(--cypress-surface);
-  border: 1px solid var(--cypress-border);
+  background: var(--pw-surface);
+  border: 1px solid var(--pw-border);
   border-radius: 4px;
-  color: var(--k6-accent);
+  color: var(--pw-green);
 }
 
 .pom-diagram {
@@ -433,15 +455,15 @@
 }
 
 .pom-box {
-  background: var(--cypress-surface);
-  border: 1px solid var(--cypress-border);
+  background: var(--pw-surface);
+  border: 1px solid var(--pw-border);
   border-radius: 10px;
   padding: 1rem;
   text-align: left;
 }
 
 .pom-box h4 {
-  color: var(--k6-accent);
+  color: var(--pw-green);
   margin: 0 0 0.5em;
   font-size: 0.95em;
 }
@@ -450,12 +472,12 @@
   margin: 0;
   padding-left: 1.2em;
   font-size: 0.9em;
-  color: var(--cypress-muted);
+  color: var(--pw-muted);
 }
 
 .pom-arrow {
   font-size: 2em;
-  color: var(--k6-accent);
+  color: var(--pw-green);
 }
 
 .page-map {
@@ -471,15 +493,15 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5em 0.8em;
-  background: var(--cypress-surface);
-  border: 1px solid var(--cypress-border);
+  background: var(--pw-surface);
+  border: 1px solid var(--pw-border);
   border-radius: 6px;
   font-family: var(--font-mono);
-  color: var(--k6-accent);
+  color: var(--pw-green);
 }
 
 .page-map-item span {
-  color: var(--cypress-muted);
+  color: var(--pw-muted);
   font-family: var(--font-sans);
   font-size: 0.85em;
 }
@@ -490,16 +512,16 @@
   font-size: 0.5em;
   padding: 0.2em 0.6em;
   margin-left: 0.4em;
-  color: var(--k6-accent-dark);
+  color: var(--pw-green-dark);
   background: rgba(125, 100, 255, 0.12);
-  border: 1px solid var(--cypress-border);
+  border: 1px solid var(--pw-border);
   border-radius: 4px;
   vertical-align: middle;
 }
 
 .compare-table.compact .group-row td {
-  background: var(--cypress-surface);
-  color: var(--k6-accent);
+  background: var(--pw-surface);
+  color: var(--pw-green);
   font-weight: 600;
   font-size: 1.05em;
 }
@@ -519,20 +541,49 @@
 
 .slide-cta .link-card {
   padding: 1rem 1.5rem;
-  background: var(--cypress-surface);
-  border: 1px solid var(--cypress-border);
+  background: var(--pw-surface);
+  border: 1px solid var(--pw-border);
   border-radius: 10px;
   min-width: 200px;
   transition: border-color 0.2s;
 }
 
 .slide-cta .link-card:hover {
-  border-color: var(--k6-accent);
+  border-color: var(--pw-green);
 }
 
 .slide-cta .link-card strong {
   display: block;
   margin-bottom: 0.3em;
+}
+
+.slide-cta .link-card img {
+  display: block;
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 0.5rem;
+}
+
+.reveal .icon-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.reveal h3.icon-heading {
+  justify-content: flex-start;
+  font-size: 0.95em;
+}
+
+.reveal .feature-card .icon-heading {
+  justify-content: flex-start;
+  font-size: 0.95em;
+  margin-bottom: 0.4em;
+}
+
+.reveal .tool-list {
+  text-align: left;
 }
 
 /* Fragment animations */

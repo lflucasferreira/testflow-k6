@@ -7,10 +7,44 @@
     <meta name="description" content="Apresentação completa sobre Grafana k6: instalação, tipos de teste, thresholds, TestFlow e tópicos avançados." />
 
     <link rel="icon" href="assets/k6-logo.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" />
+    <script>
+      (function () {
+        var path = location.pathname
+        var last = path.split('/').filter(Boolean).pop() || ''
+        if (/\.html?$/i.test(last)) return
+
+        var base
+        var slidesIdx = path.indexOf('/slides')
+        if (slidesIdx !== -1) {
+          base = path.substring(0, slidesIdx + '/slides'.length) + '/'
+        } else {
+          base = path.replace(/\/index$/i, '')
+          if (!base.endsWith('/')) base += '/'
+        }
+
+        var b = document.createElement('base')
+        b.href = base
+        document.head.appendChild(b)
+      })()
+    </script>
+    <script>
+      (function () {
+        var k = 'k6-docs-theme'
+        var t = localStorage.getItem(k)
+        if (t !== 'light' && t !== 'dark') {
+          t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+        }
+        document.documentElement.setAttribute('data-theme', t)
+      })()
+    </script>
+    <link rel="stylesheet" href="../../node_modules/reveal.js/dist/reveal.css" />
+    <link id="reveal-theme" rel="stylesheet" href="../../node_modules/reveal.js/dist/theme/black.css" />
+    <link id="hljs-theme" rel="stylesheet" href="../../node_modules/highlight.js/styles/github-dark.css" />
+    <link rel="stylesheet" href="css/themes.css" />
+    <link rel="stylesheet" href="css/theme-toggle.css" />
     <link rel="stylesheet" href="css/theme-k6.css" />
+    <link rel="stylesheet" href="css/theme-light.css" />
+    <link rel="stylesheet" href="css/icons.css" />
     <script>
       if (window.location.search.match(/print-pdf/gi)) {
         const link = document.createElement('link')
@@ -22,6 +56,10 @@
     </script>
   </head>
   <body>
+    <button type="button" class="theme-toggle theme-toggle--floating" aria-label="Toggle theme">
+      <span class="theme-toggle-icon theme-toggle-icon--dark" aria-hidden="true">☀</span>
+      <span class="theme-toggle-icon theme-toggle-icon--light" aria-hidden="true">☾</span>
+    </button>
     <div class="footer-bar" aria-hidden="true"></div>
 
     <div class="reveal">
@@ -59,24 +97,20 @@
           <h2>Por que usar k6?</h2>
           <div class="feature-grid">
             <div class="feature-card fragment fade-up">
-              <div class="icon">⚡</div>
-              <h4>Developer-friendly</h4>
+              <h4 class="icon-heading"><img src="assets/icons/javascript.svg" alt="" class="tool-icon" aria-hidden="true" /> Developer-friendly</h4>
               <p>Scripts JS/TS — mesma linguagem do time de QA/dev.</p>
             </div>
             <div class="feature-card fragment fade-up">
-              <div class="icon">📊</div>
-              <h4>SLOs como código</h4>
+              <h4 class="icon-heading"><img src="assets/k6-logo.svg" alt="" class="tool-icon" aria-hidden="true" /> SLOs como código</h4>
               <p>Thresholds versionados junto com os cenários.</p>
             </div>
             <div class="feature-card fragment fade-up">
-              <div class="icon">🐳</div>
-              <h4>CLI + Docker</h4>
+              <h4 class="icon-heading"><img src="assets/icons/docker.svg" alt="" class="tool-icon" aria-hidden="true" /> CLI + Docker</h4>
               <p>Roda local, CI ou cluster sem JVM pesado.</p>
             </div>
             <div class="feature-card fragment fade-up">
-              <div class="icon">🔗</div>
-              <h4>TestFlow ready</h4>
-              <p>Complementa Cypress, Playwright e PyTest.</p>
+              <h4 class="icon-heading"><img src="assets/icons/testflow.svg" alt="" class="tool-icon" aria-hidden="true" /> TestFlow ready</h4>
+              <p>Complementa <img src="assets/icons/cypress.svg" alt="" class="tool-icon tool-icon--sm" aria-hidden="true" /> Cypress, <img src="assets/playwright-logo.svg" alt="" class="tool-icon tool-icon--sm" aria-hidden="true" /> Playwright e PyTest.</p>
             </div>
           </div>
         </section>
@@ -105,11 +139,23 @@
           <div class="two-col">
             <div>
               <h3>Ambiente</h3>
-              <ul>
-                <li class="fragment fade-up"><strong>Node.js 20+</strong> (npm scripts do projeto)</li>
-                <li class="fragment fade-up"><strong>k6</strong> nativo <em>ou</em> Docker</li>
-                <li class="fragment fade-up"><strong>TestFlow</strong> em <code>:5050</code></li>
-                <li class="fragment fade-up">Editor: VS Code / Cursor</li>
+              <ul class="tool-list" style="font-size:0.85em;">
+                <li class="fragment fade-up">
+                  <img src="assets/icons/nodedotjs.svg" alt="" class="tool-icon" aria-hidden="true" />
+                  <span><strong>Node.js 20+</strong> (npm scripts do projeto)</span>
+                </li>
+                <li class="fragment fade-up">
+                  <img src="assets/k6-logo.svg" alt="" class="tool-icon" aria-hidden="true" />
+                  <span><strong>k6</strong> nativo <em>ou</em> <img src="assets/icons/docker.svg" alt="" class="tool-icon tool-icon--sm" aria-hidden="true" /> Docker</span>
+                </li>
+                <li class="fragment fade-up">
+                  <img src="assets/icons/testflow.svg" alt="" class="tool-icon" aria-hidden="true" />
+                  <span><strong>TestFlow</strong> em <code>:5050</code></span>
+                </li>
+                <li class="fragment fade-up">
+                  <img src="assets/icons/visualstudiocode.svg" alt="" class="tool-icon" aria-hidden="true" />
+                  <span>Editor: <strong>VS Code</strong> / <img src="assets/icons/cursor.svg" alt="" class="tool-icon tool-icon--sm" aria-hidden="true" /> <strong>Cursor</strong></span>
+                </li>
               </ul>
             </div>
             <div class="terminal fragment fade-up">
@@ -130,7 +176,7 @@
         <!-- Instalação -->
         <section>
           <section>
-            <h2>Instalação — macOS</h2>
+            <h2 class="icon-heading"><img src="assets/icons/apple.svg" alt="" class="tool-icon tool-icon--md" aria-hidden="true" /> Instalação — macOS</h2>
             <ol class="steps">
               <li class="fragment fade-up">
                 <div>
@@ -154,7 +200,7 @@
           </section>
 
           <section>
-            <h2>Instalação — Linux</h2>
+            <h2 class="icon-heading"><img src="assets/icons/linux.svg" alt="" class="tool-icon tool-icon--md" aria-hidden="true" /> Instalação — Linux</h2>
             <p class="fragment fade-up" style="font-size: 0.62em; color: var(--cypress-muted); margin-bottom: 0.6em;">
               Debian/Ubuntu — repo oficial Grafana (<a href="https://grafana.com/docs/k6/latest/set-up/install-k6/">docs</a>)
             </p>
@@ -189,7 +235,7 @@
           </section>
 
           <section>
-            <h2>Instalação — Windows</h2>
+            <h2 class="icon-heading"><img src="assets/icons/windows.svg" alt="" class="tool-icon tool-icon--md" aria-hidden="true" /> Instalação — Windows</h2>
             <ol class="steps">
               <li class="fragment fade-up">
                 <div>
@@ -223,7 +269,7 @@
           </section>
 
           <section>
-            <h2>Instalação — Docker (sem k6 local)</h2>
+            <h2 class="icon-heading"><img src="assets/icons/docker.svg" alt="" class="tool-icon tool-icon--md" aria-hidden="true" /> Instalação — Docker (sem k6 local)</h2>
             <pre class="fragment fade-up"><code class="language-bash"># TestFlow + k6 via compose
 npm run docker:up
 
@@ -517,7 +563,7 @@ k6 run script.js</code></pre>
           <section>
             <h2>Report CI — GitHub Pages</h2>
             <p class="fragment fade-up" style="font-size: 0.72em;">
-              A cada push em <code>main</code>, o workflow <code>pages.yml</code> roda a suíte de 7 cenários
+              A cada push em <code>main</code>, o job <code>publish-pages</code> em <code>k6.yml</code> roda a suíte de 7 cenários
               e publica o dashboard HTML.
             </p>
             <ul class="fragment fade-up" style="font-size: 0.68em;">
@@ -528,6 +574,11 @@ k6 run script.js</code></pre>
 
           <section>
             <h2>Grafana + InfluxDB (tempo real)</h2>
+            <p class="fragment fade-up" style="font-size: 0.68em;">
+              <img src="assets/icons/grafana.svg" alt="" class="tool-icon tool-icon--sm" aria-hidden="true" />
+              <img src="assets/icons/influxdb.svg" alt="" class="tool-icon tool-icon--sm" aria-hidden="true" />
+              Stack local com métricas em tempo real.
+            </p>
             <pre class="fragment fade-up"><code class="language-bash">npm run grafana:up
 npm run test:smoke:grafana</code></pre>
             <ul class="fragment fade-up" style="font-size: 0.68em;">
@@ -567,6 +618,10 @@ export default function authenticatedJourney() {
         <!-- CI -->
         <section>
           <h2>CI/CD — GitHub Actions</h2>
+          <p class="fragment fade-up" style="font-size: 0.65em;">
+            <img src="assets/icons/githubactions.svg" alt="" class="tool-icon tool-icon--sm" aria-hidden="true" />
+            Workflow <code>k6.yml</code> — smoke gate, load manual e publish-pages.
+          </p>
           <pre class="fragment fade-up"><code class="language-yaml">services:
   testflow:
     image: qaschool/testflow:latest
@@ -591,19 +646,19 @@ steps:
             <h2>Tópicos avançados</h2>
             <div class="feature-grid" style="font-size: 0.58em;">
               <div class="feature-card fragment fade-up">
-                <h4>k6 Browser</h4>
+                <h4 class="icon-heading"><img src="assets/icons/googlechrome.svg" alt="" class="tool-icon" aria-hidden="true" /> k6 Browser</h4>
                 <p>Core Web Vitals, login UI — <code>scenarios/browser/</code></p>
               </div>
               <div class="feature-card fragment fade-up">
-                <h4>xk6 extensions</h4>
+                <h4 class="icon-heading"><img src="assets/k6-logo.svg" alt="" class="tool-icon" aria-hidden="true" /> xk6 extensions</h4>
                 <p>SQL, Kafka, Redis — build customizado</p>
               </div>
               <div class="feature-card fragment fade-up">
-                <h4>k6 Cloud</h4>
+                <h4 class="icon-heading"><img src="assets/icons/grafana.svg" alt="" class="tool-icon" aria-hidden="true" /> k6 Cloud</h4>
                 <p>Load distribuído, geo, histórico</p>
               </div>
               <div class="feature-card fragment fade-up">
-                <h4>Outputs</h4>
+                <h4 class="icon-heading"><img src="assets/icons/influxdb.svg" alt="" class="tool-icon" aria-hidden="true" /> Outputs</h4>
                 <p>InfluxDB, Prometheus, Datadog, OTLP</p>
               </div>
             </div>
@@ -721,27 +776,33 @@ sleep(thinkTime(0.5, 2))  // pausa entre iterações</code></pre>
           <p>Você já sabe instalar k6, configurar SLOs e rodar performance no TestFlow.</p>
           <div class="links">
             <a class="link-card fragment fade-up" href="https://lflucasferreira.github.io/testflow-k6/report/" target="_blank" rel="noopener">
-              <strong>📊 Performance report</strong>
+              <img src="assets/icons/githubactions.svg" alt="" width="24" height="24" aria-hidden="true" />
+              <strong>Performance report</strong>
               GitHub Pages — CI dashboard
             </a>
             <a class="link-card fragment fade-up" href="http://localhost:3000/d/4sk8QaJVx/k6-test-results" target="_blank" rel="noopener">
-              <strong>📈 Grafana live</strong>
+              <img src="assets/icons/grafana.svg" alt="" width="24" height="24" aria-hidden="true" />
+              <strong>Grafana live</strong>
               K6 Test Results (local)
             </a>
             <a class="link-card fragment fade-up" href="https://grafana.com/docs/k6/latest/" target="_blank" rel="noopener">
-              <strong>📚 Documentação k6</strong>
+              <img src="assets/k6-logo.svg" alt="" width="24" height="24" aria-hidden="true" />
+              <strong>Documentação k6</strong>
               grafana.com/docs/k6
             </a>
             <a class="link-card fragment fade-up" href="https://grafana.com/docs/k6/latest/results-output/web-dashboard/" target="_blank" rel="noopener">
-              <strong>📊 Web Dashboard</strong>
+              <img src="assets/k6-logo.svg" alt="" width="24" height="24" aria-hidden="true" />
+              <strong>Web Dashboard</strong>
               HTML report oficial
             </a>
             <a class="link-card fragment fade-up" href="https://github.com/lflucasferreira/testflow-k6" target="_blank" rel="noopener">
-              <strong>🐙 testflow-k6</strong>
+              <img src="assets/icons/github.svg" alt="" width="24" height="24" aria-hidden="true" />
+              <strong>testflow-k6</strong>
               Repositório do projeto
             </a>
             <a class="link-card fragment fade-up" href="../../README.md">
-              <strong>📋 README</strong>
+              <img src="assets/icons/markdown.svg" alt="" width="24" height="24" aria-hidden="true" />
+              <strong>README</strong>
               Como rodar e CI
             </a>
           </div>
@@ -753,8 +814,9 @@ sleep(thinkTime(0.5, 2))  // pausa entre iterações</code></pre>
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+    <script src="js/theme.js" data-base="../../"></script>
+    <script src="../../node_modules/reveal.js/dist/reveal.js"></script>
+    <script src="../../node_modules/reveal.js/plugin/highlight/highlight.js"></script>
     <script>
       const isPrintPdf = window.location.search.match(/print-pdf/gi)
 

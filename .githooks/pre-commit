@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+source "$(dirname "$0")/lib/author-policy.sh"
+
+author_policy_check_email "$(git config user.email || true)" "Git config user"
+
+if [ -n "${GIT_AUTHOR_EMAIL:-}" ]; then
+  author_policy_check_email "$GIT_AUTHOR_EMAIL" "Author"
+fi
+
+if [ -n "${GIT_COMMITTER_EMAIL:-}" ]; then
+  author_policy_check_email "$GIT_COMMITTER_EMAIL" "Committer"
+fi

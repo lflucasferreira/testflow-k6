@@ -1,0 +1,129 @@
+/**
+ * Tool & platform brand icons — Simple Icons + custom assets
+ * Icons live in ../assets/icons/
+ */
+
+.tool-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  object-fit: contain;
+  flex-shrink: 0;
+  vertical-align: -0.2em;
+}
+
+.tool-icon--sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+.tool-icon--md {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.tool-icon--lg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.icon-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0;
+}
+
+.icon-heading .tool-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.tool-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tool-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: 0.65rem;
+  line-height: 1.5;
+}
+
+.tool-list li .tool-icon {
+  margin-top: 0.15rem;
+}
+
+.tool-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.tool-inline .tool-icon {
+  width: 1rem;
+  height: 1rem;
+  vertical-align: middle;
+}
+
+.tool-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0.75rem 0;
+}
+
+.tool-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.875rem;
+  background: var(--pw-surface);
+  border: 1px solid var(--pw-border);
+  border-radius: 999px;
+}
+
+.tool-chip .tool-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.platform-grid .feature-card h4.icon-heading {
+  margin-bottom: 0.85rem;
+}
+
+.feature-card h4.icon-heading .tool-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.platform-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0;
+}
+
+.install-step-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.browser-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  vertical-align: middle;
+}
+
+.browser-icons .tool-icon {
+  width: 1rem;
+  height: 1rem;
+}

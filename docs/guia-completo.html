@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>k6 — Guia Completo (Setup e Comandos)</title>
+    <meta
+      name="description"
+      content="Guia passo a passo de Grafana k6 para testflow-k6 — instalação, perfis de carga, thresholds SLO, helpers HTTP, journeys, Grafana e CI."
+    />
+    <link rel="icon" href="slides/assets/k6-logo.svg" type="image/svg+xml" />
+    <script>
+      (function () {
+        var path = location.pathname;
+        var last = path.split('/').filter(Boolean).pop() || '';
+        if (/\.html?$/i.test(last)) return;
+
+        var docsIdx = path.indexOf('/docs/');
+        if (docsIdx !== -1) {
+          var b = document.createElement('base');
+          b.href = path.substring(0, docsIdx + '/docs/'.length);
+          document.head.appendChild(b);
+          return;
+        }
+
+        var base = path.replace(/\/[^/]+$/, '/');
+        if (!base.endsWith('/')) base += '/';
+        var b = document.createElement('base');
+        b.href = base;
+        document.head.appendChild(b);
+      })();
+    </script>
+    <script>
+      (function () {
+        var k = 'k6-docs-theme';
+        var t = localStorage.getItem(k);
+        if (t !== 'light' && t !== 'dark') {
+          t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        }
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <link rel="stylesheet" href="slides/css/themes.css" />
+    <link rel="stylesheet" href="slides/css/theme-toggle.css" />
+    <link rel="stylesheet" href="slides/css/guide.css" />
+    <link rel="stylesheet" href="slides/css/theme-light.css" />
+    <link rel="stylesheet" href="slides/css/icons.css" />
+    <link
+      id="hljs-theme"
+      rel="stylesheet"
+      href="../node_modules/highlight.js/styles/github-dark.css"
+    />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html">
+        <img src="slides/assets/k6-logo.svg" alt="Grafana k6" />
+        testflow-k6
+      </a>
+      <nav class="header-links">
+        <a href="index.html">Início</a>
+        <a href="slides/index.html">Slides</a>
+        <a href="complete-guide.html">English</a>
+        <a href="https://grafana.com/docs/k6/latest/" target="_blank" rel="noopener">Docs oficiais</a>
+        <a
+          class="nav-github"
+          href="https://github.com/lflucasferreira/testflow-k6"
+          target="_blank"
+          rel="noopener"
+        >
+          <img src="slides/assets/icons/github.svg" alt="" width="18" height="18" aria-hidden="true" />
+          GitHub
+        </a>
+        <button type="button" class="theme-toggle" aria-label="Alternar tema">
+          <span class="theme-toggle-icon theme-toggle-icon--dark" aria-hidden="true">☀</span>
+          <span class="theme-toggle-icon theme-toggle-icon--light" aria-hidden="true">☾</span>
+        </button>
+      </nav>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar" aria-label="Sumário">
+        <h2>Introdução</h2>
+        <ul>
+          <li><a href="#o-que-e-k6">O que é k6</a></li>
+          <li><a href="#pre-requisitos">Pré-requisitos</a></li>
+          <li><a href="#setup-plataforma">Setup por plataforma</a></li>
+          <li><a href="#instalacao-k6">Instalação do k6</a></li>
+          <li><a href="#estrutura-projeto">Estrutura do projeto</a></li>
+          <li><a href="#primeiro-cenario">Primeiro cenário</a></li>
+        </ul>
+        <h2>Conceitos centrais</h2>
+        <ul>
+          <li><a href="#perfis-carga">Perfis de carga</a></li>
+          <li><a href="#thresholds-checks">Thresholds e checks</a></li>
+          <li><a href="#helpers-http">Helpers HTTP</a></li>
+          <li><a href="#tipos-teste">Tipos de teste</a></li>
+          <li><a href="#metricas-custom">Métricas customizadas</a></li>
+          <li><a href="#group-journeys">group() em journeys</a></li>
+          <li><a href="#fase-setup">Fase setup()</a></li>
+        </ul>
+        <h2>Relatórios e ops</h2>
+        <ul>
+          <li><a href="#relatorios">Relatórios</a></li>
+          <li><a href="#grafana-influx">Grafana + InfluxDB</a></li>
+          <li><a href="#ci">CI</a></li>
+          <li><a href="#scripts-npm">Scripts npm</a></li>
+          <li><a href="#docs-treinamento">Docs de treinamento</a></li>
+          <li><a href="#boas-praticas">Boas práticas</a></li>
+          <li><a href="#proximos-passos">Próximos passos</a></li>
+        </ul>
+      </aside>
+
+      <main>
+        <header class="hero">
+          <div class="hero-logo">
+            <img src="slides/assets/k6-logo.svg" alt="Grafana k6" />
+            <span class="wordmark">k6</span>
+          </div>
+          <h1>Guia Completo — Setup e Comandos</h1>
+          <p class="subtitle">
+            Do zero ao load testing em produção: instale o k6, execute gates smoke contra o
+            <strong>qaschool/testflow</strong>, ajuste thresholds SLO, publique relatórios HTML e integre Grafana.
+          </p>
+          <span class="badge">Smoke · Load · Stress · Spike · Soak · Journey · Browser</span>
+        </header>
+
+        <!-- 1. O que é k6 -->
+        <section id="o-que-e-k6">
+          <h2>O que é k6?</h2>
+          <p>
+            O <a href="https://grafana.com/docs/k6/latest/" target="_blank" rel="noopener">Grafana k6</a>
+            é uma ferramenta open-source de teste de carga para API, microsserviços e performance de browser.
+            Os scripts são escritos em JavaScript (ES modules) e executados por um runtime Go que gera tráfego HTTP
+            real em escala.
+          </p>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/javascript.svg" alt="" aria-hidden="true" />
+                Developer-first
+              </h4>
+              <p>Scripts JS versionados, npm scripts e gates em CI — mesmo fluxo do Cypress e Playwright.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/k6-logo.svg" alt="" aria-hidden="true" />
+                Métricas nativas
+              </h4>
+              <p><code>http_req_duration</code>, <code>http_req_failed</code>, <code>checks</code>, VUs e Trend/Rate/Counter customizados.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/k6-logo.svg" alt="" aria-hidden="true" />
+                Thresholds SLO
+              </h4>
+              <p>Falha a execução quando latência, taxa de erro ou checks violam limites — não só quando a app cai.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/grafana.svg" alt="" aria-hidden="true" />
+                Saída extensível
+              </h4>
+              <p>Summary JSON, dashboard HTML, streaming InfluxDB, Grafana Cloud e export do web dashboard k6.</p>
+            </div>
+          </div>
+
+          <h3>Por que usar k6 no testflow-k6?</h3>
+          <p>
+            O repositório
+            <a href="https://github.com/lflucasferreira/testflow-k6" target="_blank" rel="noopener">testflow-k6</a>
+            complementa a automação funcional em <code>testflow-cypress</code>, <code>testflow-playwright</code> e
+            <code>testflow-pytest</code>. Valida <strong>Service Level Objectives (SLOs)</strong> do sandbox
+            <a href="https://github.com/qaschoolbr/testflow" target="_blank" rel="noopener">TestFlow</a> na porta
+            <code>5050</code> em padrões smoke, load, stress, spike e soak.
+          </p>
+          <ul>
+            <li><strong>Mesmos endpoints</strong> — <code>/health</code>, <code>/api/auth/login</code>, <code>/api/users</code>, <code>/web/*.html</code></li>
+            <li><strong>SLOs alinhados</strong> — p95 por endpoint espelha timeouts dos testes funcionais</li>
+            <li><strong>Gate smoke em CI</strong> — cada push executa perfil leve contra TestFlow em Docker</li>
+            <li><strong>Relatório GitHub Pages</strong> — dashboard HTML com 7 cenários a cada push em <code>main</code></li>
+            <li><strong>Credenciais compartilhadas</strong> — <code>demo@automation.io</code> / variável <code>DEMO_PASSWORD</code></li>
+          </ul>
+          <div class="callout">
+            Diferente de ferramentas só de browser, o k6 brilha em <strong>throughput HTTP</strong> e
+            <strong>concorrência</strong>. Use <code>test:browser:login</code> para Chromium sob carga; use cenários
+            de API para testes de capacidade.
+          </div>
+        </section>
+
+        <!-- 2. Pré-requisitos -->
+        <section id="pre-requisitos">
+          <h2>Pré-requisitos</h2>
+          <p>Antes de clonar o repositório, confirme que sua máquina atende aos requisitos abaixo.</p>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/nodedotjs.svg" alt="" aria-hidden="true" />
+                Node.js 20+
+              </h4>
+              <p>Necessário para scripts npm, geração de relatório e servidor local de docs.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/testflow.svg" alt="" aria-hidden="true" />
+                TestFlow na 5050
+              </h4>
+              <p>App alvo: <code>qaschool/testflow:latest</code> — health em <code>http://localhost:5050/health</code>.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/k6-logo.svg" alt="" aria-hidden="true" />
+                k6 v1.0+
+              </h4>
+              <p>Binário nativo recomendado. Fallback Docker via <code>scripts/run-k6.sh</code> sem k6 instalado.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/docker.svg" alt="" aria-hidden="true" />
+                Docker (opcional)
+              </h4>
+              <p>TestFlow, imagem k6-influx, stack Grafana + InfluxDB ou compose completo.</p>
+            </div>
+          </div>
+
+          <div class="terminal">
+            <div class="terminal-header">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+            </div>
+            <div class="terminal-body">
+              <div><span class="prompt">$</span> node --version</div>
+              <div>v20.x.x</div>
+              <br />
+              <div><span class="prompt">$</span> curl -sf http://localhost:5050/health</div>
+              <div>{"status":"ok"}</div>
+              <br />
+              <div><span class="prompt">$</span> k6 version</div>
+              <div>k6 v1.x.x (...)</div>
+            </div>
+          </div>
+
+          <h3>Setup do projeto</h3>
+          <pre><code class="language-bash">git clone https://github.com/lflucasferreira/testflow-k6.git
+cd testflow-k6
+npm install
+cp .env.example .env   # opcional — BASE_URL, DEMO_PASSWORD, tokens InfluxDB</code></pre>
+        </section>
+
+        <!-- 3. Setup por plataforma -->
+        <section id="setup-plataforma">
+          <h2>Setup do ambiente por plataforma</h2>
+          <p>
+            Instale <strong>Node.js 20+</strong>, <strong>Git</strong> e <strong>Docker</strong> (para TestFlow na porta
+            5050). Os passos do projeto (<code>npm install</code>, execuções k6) são idênticos em todo SO.
+          </p>
+
+          <div class="feature-grid platform-grid">
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="card-logo" src="slides/assets/icons/apple.svg" alt="" aria-hidden="true" />
+                macOS
+              </h4>
+              <pre><code class="language-bash"># Homebrew — https://brew.sh
+brew install node@20 git
+brew link --overwrite node@20
+brew install --cask docker
+
+node --version   # v20+
+git --version</code></pre>
+              <p>
+                <img class="tool-icon tool-icon--sm" src="slides/assets/icons/homebrew.svg" alt="" aria-hidden="true" />
+                Homebrew ·
+                <img class="tool-icon tool-icon--sm" src="slides/assets/icons/docker.svg" alt="" aria-hidden="true" />
+                Docker Desktop
+              </p>
+            </div>
+
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="card-logo" src="slides/assets/icons/windows.svg" alt="" aria-hidden="true" />
+                Windows
+              </h4>
+              <pre><code class="language-powershell">winget install OpenJS.NodeJS.LTS
+winget install Git.Git
+winget install Docker.DockerDesktop
+
+node --version</code></pre>
+              <p>
+                <img class="tool-icon tool-icon--sm" src="slides/assets/icons/winget.svg" alt="" aria-hidden="true" />
+                winget ·
+                <img class="tool-icon tool-icon--sm" src="slides/assets/icons/powershell.svg" alt="" aria-hidden="true" />
+                PowerShell · Git Bash
+              </p>
+            </div>
+
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="card-logo" src="slides/assets/icons/linux.svg" alt="" aria-hidden="true" />
+                Linux (Debian / Ubuntu)
+              </h4>
+              <pre><code class="language-bash">curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs git docker.io
+sudo usermod -aG docker $USER
+
+node --version</code></pre>
+              <p>NodeSource · Docker · faça logout após <code>usermod</code> para o grupo docker.</p>
+            </div>
+          </div>
+
+          <h3>Subir TestFlow — igual em todo SO</h3>
+          <pre><code class="language-bash">docker run --rm -p 5050:5050 qaschool/testflow:latest
+# ou
+npm run docker:up</code></pre>
+        </section>
+
+        <!-- 4. Instalação k6 -->
+        <section id="instalacao-k6">
+          <h2>Instalação do k6</h2>
+          <p>
+            O k6 nativo é mais rápido no dia a dia e <strong>obrigatório</strong> para cenários browser
+            (<code>test:browser:login</code>). Sem k6 instalado, os scripts npm usam a imagem
+            <code>grafana/k6</code> via <code>scripts/run-k6.sh</code>.
+          </p>
+
+          <div class="feature-grid platform-grid">
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/apple.svg" alt="" aria-hidden="true" />
+                macOS — Homebrew
+              </h4>
+              <pre><code class="language-bash">brew install k6
+k6 version</code></pre>
+            </div>
+
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/linux.svg" alt="" aria-hidden="true" />
+                Linux — apt (Debian/Ubuntu)
+              </h4>
+              <pre><code class="language-bash">curl -fsSL https://dl.k6.io/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+  | sudo tee /etc/apt/sources.list.d/k6.list
+sudo apt-get update
+sudo apt-get install -y k6
+k6 version</code></pre>
+            </div>
+
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/windows.svg" alt="" aria-hidden="true" />
+                Windows — winget
+              </h4>
+              <pre><code class="language-powershell">winget install k6 --source winget
+k6 version</code></pre>
+            </div>
+          </div>
+
+          <h3>Verificar instalação</h3>
+          <div class="terminal">
+            <div class="terminal-header">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+            </div>
+            <div class="terminal-body">
+              <div><span class="prompt">$</span> k6 version</div>
+              <div>k6 v1.0.0 (go1.22.0, darwin/arm64)</div>
+              <br />
+              <div><span class="prompt">$</span> npm run test:smoke</div>
+              <div><span class="comment"># usa k6 local quando disponível</span></div>
+            </div>
+          </div>
+
+          <div class="callout">
+            <strong>Proxy corporativo (Zscaler / SSL):</strong> se <code>brew install k6</code> ou apt falhar com erro
+            de certificado, use o fallback Docker (<code>npm run docker:smoke</code>) ou configure CA do sistema —
+            mesma abordagem do testflow-playwright.
+          </div>
+        </section>
+
+        <!-- 5. Estrutura do projeto -->
+        <section id="estrutura-projeto">
+          <h2>Estrutura do projeto</h2>
+          <pre><code class="language-text">testflow-k6/
+├── config/              # environments.js, profiles.js, thresholds.js
+├── lib/                 # auth.js, http.js, endpoints.js, summary.js
+├── scenarios/
+│   ├── smoke/           # gate CI — api-health.js
+│   ├── load/            # api-auth, api-users, mixed-traffic
+│   ├── stress/          # api-breakpoint.js
+│   ├── spike/           # api-spike.js
+│   ├── soak/            # api-endurance.js
+│   └── browser/         # login-page.js (k6 browser)
+├── journeys/            # login-flow.js, authenticated-user.js
+├── docs/                # hub GitHub Pages, slides, este guia
+├── monitoring/          # provisionamento Grafana + InfluxDB
+│   ├── grafana/         # datasource + dashboard JSON k6
+│   └── influxdb/        # template YAML + dashboard JSON
+├── scripts/             # run-k6.sh, generate-report.mjs, grafana-up.sh
+├── results/             # summary JSON, relatório HTML, REPORT.md
+├── docker/              # k6-influx.Dockerfile (xk6-output-influxdb)
+├── docker-compose.yml
+└── .github/workflows/
+    └── k6.yml           # gate smoke, load manual, GitHub Pages</code></pre>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/k6-logo.svg" alt="" aria-hidden="true" />
+                <code>config/</code>
+              </h4>
+              <p><code>environments.js</code> — BASE_URL, credenciais. <code>profiles.js</code> — stages de VU. <code>thresholds.js</code> — gates SLO.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/javascript.svg" alt="" aria-hidden="true" />
+                <code>lib/</code>
+              </h4>
+              <p>Helpers HTTP reutilizáveis com <code>check()</code> embutido. Nunca duplique lógica de endpoint nos cenários.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/k6-logo.svg" alt="" aria-hidden="true" />
+                <code>scenarios/</code>
+              </h4>
+              <p>Testes de carga por tipo: smoke, load, stress, spike, soak, browser.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/testflow.svg" alt="" aria-hidden="true" />
+                <code>journeys/</code>
+              </h4>
+              <p>Fluxos multi-etapa com <code>group()</code> para timing por passo nos relatórios.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/grafana.svg" alt="" aria-hidden="true" />
+                <code>monitoring/</code>
+              </h4>
+              <p>Dashboards Grafana e templates InfluxDB para stack local e cloud.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/revealjs.svg" alt="" aria-hidden="true" />
+                <code>docs/</code>
+              </h4>
+              <p>Landing page, slides Reveal.js, walkthroughs EN/PT, estratégia de thresholds, guias completos.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. Primeiro cenário -->
+        <section id="primeiro-cenario">
+          <h2>Primeiro cenário — smoke <code>api-health.js</code></h2>
+          <p>
+            O gate smoke é a forma mais rápida de validar que o TestFlow responde sob carga mínima. Execute com
+            <code>npm run test:smoke</code>.
+          </p>
+
+          <ol class="steps">
+            <li>
+              <div>
+                <strong>Suba o TestFlow</strong>
+                <pre><code class="language-bash">docker run --rm -p 5050:5050 qaschool/testflow:latest</code></pre>
+              </div>
+            </li>
+            <li>
+              <div>
+                <strong>Execute o cenário smoke</strong>
+                <pre><code class="language-bash">npm run test:smoke</code></pre>
+              </div>
+            </li>
+            <li>
+              <div>
+                <strong>Inspecione o script</strong> — arquivo:
+                <code>scenarios/smoke/api-health.js</code>
+              </div>
+            </li>
+          </ol>
+
+          <pre><code class="language-javascript">import { sleep } from 'k6';
+import { getProfile } from '../../config/profiles.js';
+import { getThresholds } from '../../config/thresholds.js';
+import { TAGS } from '../../config/environments.js';
+import { login } from '../../lib/auth.js';
+import { getHealth, getUsers } from '../../lib/http.js';
+import { handleSummary } from '../../lib/summary.js';
+
+export { handleSummary };
+
+const profile = getProfile('smoke');
+
+export const options = {
+  scenarios: {
+    smoke_api: {
+      executor: 'ramping-vus',
+      ...profile,
+      tags: { test_type: TAGS.smoke, suite: 'api-health' },
+    },
+  },
+  thresholds: getThresholds('smoke'),
+};
+
+export default function smokeApiHealth() {
+  getHealth();
+  sleep(0.5);
+  getUsers();
+  sleep(0.5);
+  login();
+  sleep(1);
+}</code></pre>
+
+          <p>Cada iteração exercita três endpoints críticos:</p>
+          <ul>
+            <li><code>GET /health</code> — probe de disponibilidade</li>
+            <li><code>GET /api/users</code> — lista read-heavy com validação JSON</li>
+            <li><code>POST /api/auth/login</code> — autenticação e extração de token</li>
+          </ul>
+          <p>
+            Walkthrough: <a href="pt/scenarios/smoke/api-health.md">docs/pt/scenarios/smoke/api-health.md</a>
+          </p>
+        </section>
+
+        <!-- 7. Perfis de carga -->
+        <section id="perfis-carga">
+          <h2>Perfis de carga</h2>
+          <p>
+            Perfis em <code>config/profiles.js</code> definem <code>stages</code> para o executor
+            <code>ramping-vus</code>. Selecione com <code>K6_PROFILE</code> ou passe o nome para
+            <code>getProfile()</code>.
+          </p>
+
+          <table class="compare-table">
+            <thead>
+              <tr>
+                <th>Perfil</th>
+                <th>Stages (resumo)</th>
+                <th>Uso típico</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>smoke</code></td>
+                <td>2 VUs · ~35 s</td>
+                <td>Gate local, suite <code>test:report</code></td>
+              </tr>
+              <tr>
+                <td><code>ci</code></td>
+                <td>3→5 VUs · ~55 s</td>
+                <td>GitHub Actions com <code>CI=true</code> e perfil smoke</td>
+              </tr>
+              <tr>
+                <td><code>load</code></td>
+                <td>10→25 VUs · 7 min</td>
+                <td>Tráfego sustentado tipo produção</td>
+              </tr>
+              <tr>
+                <td><code>stress</code></td>
+                <td>20→100 VUs · 12 min</td>
+                <td>Degradação sob carga alta</td>
+              </tr>
+              <tr>
+                <td><code>spike</code></td>
+                <td>5→100 VUs burst · ~2,5 min</td>
+                <td>Pico súbito e recuperação</td>
+              </tr>
+              <tr>
+                <td><code>soak</code></td>
+                <td>15 VUs · 30+ min steady</td>
+                <td>Endurance / detecção de vazamentos</td>
+              </tr>
+              <tr>
+                <td><code>breakpoint</code></td>
+                <td>Escalonado 10→125 VUs</td>
+                <td>Ramp estendido (<code>K6_PROFILE=breakpoint</code>)</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <pre><code class="language-javascript">// config/profiles.js — trecho
+export const profiles = {
+  smoke: {
+    stages: [
+      { duration: '10s', target: 2 },
+      { duration: '20s', target: 2 },
+      { duration: '5s', target: 0 },
+    ],
+    gracefulRampDown: '5s',
+  },
+  load: {
+    stages: [
+      { duration: '1m', target: 10 },
+      { duration: '3m', target: 25 },
+      { duration: '2m', target: 25 },
+      { duration: '1m', target: 0 },
+    ],
+    gracefulRampDown: '30s',
+  },
+  // stress, spike, soak, breakpoint, ci …
+};
+
+export function getProfile(name) {
+  const key = name || __ENV.K6_PROFILE || 'smoke';
+  if (__ENV.CI === 'true' && key === 'smoke') return profiles.ci;
+  return profiles[key] || profiles.smoke;
+}</code></pre>
+
+          <div class="command-tags">
+            <span class="cmd-tag">K6_PROFILE=load npm run test:load:mixed</span>
+            <span class="cmd-tag">K6_PROFILE=spike npm run test:spike</span>
+            <span class="cmd-tag">CI=true npm run test:smoke</span>
+          </div>
+        </section>
+
+        <!-- 8. Thresholds e checks -->
+        <section id="thresholds-checks">
+          <h2>Thresholds e checks</h2>
+          <p>
+            O k6 usa dois mecanismos complementares. A execução falha se <strong>qualquer um</strong> violar limites.
+            Veja <a href="threshold-strategy.md">threshold-strategy.md</a> para a matriz SLO completa.
+          </p>
+
+          <table class="compare-table">
+            <thead>
+              <tr>
+                <th>Mecanismo</th>
+                <th>Propósito</th>
+                <th>Exemplo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>check()</code></td>
+                <td>Correção funcional por request</td>
+                <td><code>health status 200</code>, <code>login has token</code></td>
+              </tr>
+              <tr>
+                <td><code>thresholds</code></td>
+                <td>SLO agregado na execução inteira</td>
+                <td><code>http_req_duration: p(95)&lt;1500</code>, <code>checks: rate&gt;0.99</code></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Tags por endpoint</h3>
+          <p>Marque cada chamada HTTP com <code>endpoint</code> para thresholds filtrados:</p>
+          <pre><code class="language-javascript">http.get(url, {
+  tags: { endpoint: 'health', name: 'GET /health' },
+});
+
+// config/thresholds.js
+export const smokeThresholds = {
+  http_req_failed: ['rate&lt;0.005'],
+  http_req_duration: ['p(95)&lt;1500', 'avg&lt;800'],
+  'http_req_duration{endpoint:health}': ['p(95)&lt;500'],
+  'http_req_duration{endpoint:users}': ['p(95)&lt;1500'],
+  'http_req_duration{endpoint:auth_login}': ['p(95)&lt;2000'],
+  checks: ['rate&gt;0.99'],
+};</code></pre>
+
+          <h3>Checks em <code>lib/http.js</code></h3>
+          <table class="compare-table compact">
+            <thead>
+              <tr>
+                <th>Helper</th>
+                <th>Checks aplicados</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>getHealth()</code></td>
+                <td>status 200; resposta &lt; 1 s</td>
+              </tr>
+              <tr>
+                <td><code>getUsers(token?)</code></td>
+                <td>status 200; <code>users[]</code> não vazio; resposta &lt; 2 s</td>
+              </tr>
+              <tr>
+                <td><code>getStaticPage(path)</code></td>
+                <td>status 200; Content-Type inclui <code>text/html</code></td>
+              </tr>
+              <tr>
+                <td><code>login()</code> em <code>lib/auth.js</code></td>
+                <td>status 200; JSON <code>token</code> é string</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- 9. Helpers HTTP -->
+        <section id="helpers-http">
+          <h2>Helpers HTTP</h2>
+          <p>
+            Helpers centralizados em <code>lib/http.js</code> e <code>lib/auth.js</code> mantêm cenários enxutos e
+            garantem checks consistentes em todo tipo de teste.
+          </p>
+
+          <h3><code>getHealth()</code></h3>
+          <pre><code class="language-javascript">export function getHealth(params = {}) {
+  const res = http.get(`${BASE_URL}${endpoints.health}`, {
+    tags: { endpoint: 'health', name: 'GET /health' },
+    ...params,
+  });
+  check(res, {
+    'health status 200': (r) => r.status === 200,
+    'health responds quickly': (r) => r.timings.duration &lt; 1000,
+  });
+  return res;
+}</code></pre>
+
+          <h3><code>getUsers(token?)</code></h3>
+          <pre><code class="language-javascript">export function getUsers(token = null, params = {}) {
+  const headers = token ? authHeaders(token) : { 'Content-Type': 'application/json' };
+  const res = http.get(`${BASE_URL}${endpoints.users.list}`, {
+    headers,
+    tags: { endpoint: 'users', name: 'GET /api/users' },
+    ...params,
+  });
+  check(res, {
+    'users status 200': (r) => r.status === 200,
+    'users has array': (r) => Array.isArray(r.json('users')) &amp;&amp; r.json('users').length &gt; 0,
+    'users responds within 2s': (r) => r.timings.duration &lt; 2000,
+  });
+  return res;
+}</code></pre>
+
+          <h3><code>login()</code></h3>
+          <pre><code class="language-javascript">export function login(params = {}) {
+  const res = http.post(`${BASE_URL}${endpoints.auth.login}`, payload, {
+    headers: { 'Content-Type': 'application/json' },
+    tags: { endpoint: 'auth_login', name: 'POST /api/auth/login' },
+    ...params,
+  });
+  check(res, {
+    'login status 200': (r) => r.status === 200,
+    'login has token': (r) => typeof r.json('token') === 'string',
+  });
+  return res.json('token');
+}</code></pre>
+
+          <h3><code>getStaticPage(path)</code></h3>
+          <pre><code class="language-javascript">export function getStaticPage(path, params = {}) {
+  const res = http.get(`${BASE_URL}${path}`, {
+    tags: { endpoint: 'static', name: `GET ${path}` },
+    ...params,
+  });
+  check(res, {
+    'static page status 200': (r) => r.status === 200,
+    'static page has html': (r) => (r.headers['Content-Type'] || '').includes('text/html'),
+  });
+  return res;
+}</code></pre>
+
+          <p>Utilitários extras: <code>weightedPick()</code>, <code>thinkTime()</code>, <code>getErrorSimulation()</code>.</p>
+        </section>
+
+        <!-- 10. Tipos de teste -->
+        <section id="tipos-teste">
+          <h2>Tipos de teste</h2>
+          <p>Cada tipo mapeia para pasta, perfil de carga e conjunto de thresholds.</p>
+
+          <table class="compare-table">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Script</th>
+                <th>Script npm</th>
+                <th>O que valida</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="group-row"><td colspan="4">Smoke</td></tr>
+              <tr>
+                <td>Smoke</td>
+                <td><code>scenarios/smoke/api-health.js</code></td>
+                <td><code>test:smoke</code></td>
+                <td>Disponibilidade + latência baseline (health, users, login)</td>
+              </tr>
+              <tr class="group-row"><td colspan="4">Load</td></tr>
+              <tr>
+                <td>Load — auth</td>
+                <td><code>scenarios/load/api-auth.js</code></td>
+                <td><code>test:load:auth</code></td>
+                <td>Throughput de login; <code>login_duration</code>, <code>login_errors</code></td>
+              </tr>
+              <tr>
+                <td>Load — users</td>
+                <td><code>scenarios/load/api-users.js</code></td>
+                <td><code>test:load:users</code></td>
+                <td>Lista users read-heavy com token via <code>setup()</code></td>
+              </tr>
+              <tr>
+                <td>Load — mixed</td>
+                <td><code>scenarios/load/mixed-traffic.js</code></td>
+                <td><code>test:load:mixed</code></td>
+                <td>Tráfego ponderado: 35% health, 30% users, 15% static, 20% users anônimo</td>
+              </tr>
+              <tr class="group-row"><td colspan="4">Stress · Spike · Soak</td></tr>
+              <tr>
+                <td>Stress</td>
+                <td><code>scenarios/stress/api-breakpoint.js</code></td>
+                <td><code>test:stress</code></td>
+                <td>Ramp até 100 VUs; conta <code>degraded_responses</code></td>
+              </tr>
+              <tr>
+                <td>Spike</td>
+                <td><code>scenarios/spike/api-spike.js</code></td>
+                <td><code>test:spike</code></td>
+                <td>Burst 5→100 VUs; métrica <code>spike_failures</code></td>
+              </tr>
+              <tr>
+                <td>Soak</td>
+                <td><code>scenarios/soak/api-endurance.js</code></td>
+                <td><code>test:soak</code></td>
+                <td>15 VUs steady por <code>K6_SOAK_MINUTES</code> (padrão 30 min)</td>
+              </tr>
+              <tr class="group-row"><td colspan="4">Journey · Browser</td></tr>
+              <tr>
+                <td>Journey</td>
+                <td><code>journeys/login-flow.js</code></td>
+                <td><code>test:journey:login</code></td>
+                <td>Login page → API login → dashboard (passos agrupados)</td>
+              </tr>
+              <tr>
+                <td>Journey</td>
+                <td><code>journeys/authenticated-user.js</code></td>
+                <td><code>test:journey:auth</code></td>
+                <td>Login → users → dashboard → team</td>
+              </tr>
+              <tr>
+                <td>Browser</td>
+                <td><code>scenarios/browser/login-page.js</code></td>
+                <td><code>test:browser:login</code></td>
+                <td>Chromium: preenche login via <code>data-testid</code>; mede <code>browser_page_load</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- 11. Métricas customizadas -->
+        <section id="metricas-custom">
+          <h2>Métricas customizadas</h2>
+          <p>
+            Importe <code>Trend</code>, <code>Rate</code> e <code>Counter</code> de
+            <code>k6/metrics</code> para rastrear comportamento específico além das métricas HTTP nativas.
+          </p>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/k6-logo.svg" alt="" aria-hidden="true" />
+                <code>Trend</code>
+              </h4>
+              <p>Distribuições de tempo — p95, avg. Ex.: <code>login_duration</code>, <code>journey_duration</code>, <code>browser_page_load</code>.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/k6-logo.svg" alt="" aria-hidden="true" />
+                <code>Rate</code>
+              </h4>
+              <p>Percentual de valores não-zero. Ex.: <code>login_errors</code>, <code>spike_failures</code>.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/k6-logo.svg" alt="" aria-hidden="true" />
+                <code>Counter</code>
+              </h4>
+              <p>Contagem monotônica crescente. Ex.: <code>degraded_responses</code> no cenário stress.</p>
+            </div>
+          </div>
+
+          <pre><code class="language-javascript">import { Trend, Rate, Counter } from 'k6/metrics';
+
+const loginDuration = new Trend('login_duration', true);
+const loginErrors = new Rate('login_errors');
+const degradedResponses = new Counter('degraded_responses');
+
+// Registrar valores durante o teste
+loginDuration.add(res.timings.duration);
+loginErrors.add(!ok);
+degradedResponses.add(1);
+
+// Adicionar thresholds em options
+export const options = {
+  thresholds: {
+    ...getThresholds('load'),
+    login_duration: ['p(95)&lt;2000'],
+    login_errors: ['rate&lt;0.01'],
+  },
+};</code></pre>
+
+          <table class="compare-table compact">
+            <thead>
+              <tr>
+                <th>Métrica</th>
+                <th>Tipo</th>
+                <th>Cenário</th>
+                <th>Threshold</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>login_duration</code></td><td>Trend</td><td>api-auth.js</td><td>p(95)&lt;2000</td></tr>
+              <tr><td><code>login_errors</code></td><td>Rate</td><td>api-auth.js</td><td>rate&lt;0.01</td></tr>
+              <tr><td><code>users_list_duration</code></td><td>Trend</td><td>api-users.js</td><td>p(95)&lt;2000</td></tr>
+              <tr><td><code>login_flow_duration</code></td><td>Trend</td><td>login-flow.js</td><td>p(95)&lt;4000</td></tr>
+              <tr><td><code>spike_failures</code></td><td>Rate</td><td>api-spike.js</td><td>rate&lt;0.10</td></tr>
+              <tr><td><code>degraded_responses</code></td><td>Counter</td><td>api-breakpoint.js</td><td>informativo</td></tr>
+              <tr><td><code>browser_page_load</code></td><td>Trend</td><td>login-page.js</td><td>p(95)&lt;5000</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- 12. group() em journeys -->
+        <section id="group-journeys">
+          <h2><code>group()</code> em journeys</h2>
+          <p>
+            Use <code>group()</code> do k6 para rotular passos em fluxos multi-etapa. Grupos aparecem separados no
+            summary e no relatório HTML, facilitando identificar passos lentos.
+          </p>
+
+          <pre><code class="language-javascript">import { sleep, group } from 'k6';
+import { Trend } from 'k6/metrics';
+
+const loginFlowDuration = new Trend('login_flow_duration', true);
+
+export default function loginFlow() {
+  const start = Date.now();
+
+  group('01_load_login_page', () => {
+    getStaticPage(endpoints.web.login);
+    sleep(0.5);
+  });
+
+  group('02_api_login', () => {
+    const res = http.post(`${BASE_URL}${endpoints.auth.login}`, payload, { /* … */ });
+    check(res, { 'login succeeds': (r) => r.status === 200 });
+    sleep(0.3);
+  });
+
+  group('03_post_login_navigation', () => {
+    getStaticPage(endpoints.web.dashboard);
+    sleep(0.5);
+  });
+
+  loginFlowDuration.add(Date.now() - start);
+}</code></pre>
+
+          <p>
+            Scripts journey: <code>journeys/login-flow.js</code> (3 grupos) e
+            <code>journeys/authenticated-user.js</code> (4 grupos: login → users → dashboard → team).
+          </p>
+        </section>
+
+        <!-- 13. Fase setup() -->
+        <section id="fase-setup">
+          <h2>Fase <code>setup()</code></h2>
+          <p>
+            A função <code>setup()</code> roda <strong>uma vez</strong> antes dos VUs iniciarem. Use para trabalho
+            caro único — ex.: obter token de auth — e passe o resultado para a função default.
+          </p>
+
+          <pre><code class="language-javascript">// lib/auth.js
+export function setupAuth() {
+  const token = login();
+  return { token };
+}
+
+// scenarios/load/api-users.js
+export function setup() {
+  return setupAuth();
+}
+
+export default function usersLoad(data) {
+  const res = getUsers(data.token);
+  usersListDuration.add(res.timings.duration);
+  sleep(0.5 + Math.random());
+}</code></pre>
+
+          <div class="callout">
+            <strong>setup() vs login por iteração:</strong> smoke e mixed-traffic chamam
+            <code>login()</code> a cada iteração para simular carga real de auth. Users list usa
+            <code>setup()</code> para focar em throughput de leitura sem overhead de login.
+          </div>
+        </section>
+
+        <!-- 14. Relatórios -->
+        <section id="relatorios">
+          <h2>Relatórios</h2>
+          <p>O testflow-k6 produz vários formatos de relatório para debug local e publicação em CI.</p>
+
+          <h3><code>npm run test:report</code></h3>
+          <p>Executa <strong>7 cenários</strong> com <code>K6_PROFILE=smoke</code> (~4 min total):</p>
+          <ol>
+            <li>smoke · 2. load-auth · 3. load-users · 4. mixed-traffic</li>
+            <li>login-flow · 6. authenticated-user · 7. spike</li>
+          </ol>
+          <p>Gera:</p>
+          <ul>
+            <li><code>results/REPORT.md</code> — resumo Markdown</li>
+            <li><code>results/report/index.html</code> — dashboard HTML com PASS/FAIL, gráficos, checks, thresholds</li>
+            <li><code>results/summary-latest.json</code> — summary legível por máquina</li>
+            <li><code>results/runs/&lt;run-id&gt;-*.json</code> — exports brutos k6</li>
+          </ul>
+          <pre><code class="language-bash">npm run test:report
+npm run report:open    # abre results/report/index.html localmente</code></pre>
+          <p>
+            Relatório live: <a href="https://lflucasferreira.github.io/testflow-k6/report/" target="_blank" rel="noopener">lflucasferreira.github.io/testflow-k6/report/</a>
+          </p>
+
+          <h3><code>handleSummary</code></h3>
+          <pre><code class="language-javascript">// lib/summary.js — exportado de todo cenário
+export function handleSummary(data) {
+  return {
+    stdout: 'texto do summary k6…',
+    'results/summary-latest.json': JSON.stringify(data, null, 2),
+    [`results/summary-${scenario}-${profile}-${timestamp}.json`]: JSON.stringify(data, null, 2),
+  };
+}</code></pre>
+
+          <h3>Web Dashboard k6 (live + export HTML)</h3>
+          <pre><code class="language-bash">npm run test:smoke:ui          # K6_DASHBOARD=true — live em http://localhost:5665
+npm run test:load:mixed:ui
+K6_DASHBOARD=true K6_SCENARIO=spike npm run test:spike</code></pre>
+
+          <h3>GitHub Pages</h3>
+          <p>
+            A cada push em <code>main</code>, o job <code>publish-pages</code> em
+            <code>.github/workflows/k6.yml</code> monta o hub de docs, executa a suite de relatório e publica no
+            GitHub Pages.
+          </p>
+        </section>
+
+        <!-- 15. Grafana + InfluxDB -->
+        <section id="grafana-influx">
+          <h2>Grafana + InfluxDB</h2>
+          <p>Stream métricas k6 em tempo real para InfluxDB e visualize no Grafana — local ou na cloud.</p>
+
+          <h3>Stack local</h3>
+          <pre><code class="language-bash">npm run grafana:up              # TestFlow + InfluxDB + Grafana (Docker)
+npm run test:smoke:grafana      # smoke com métricas live
+npm run test:load:mixed:grafana # load com dashboard
+npm run grafana:down</code></pre>
+
+          <table class="compare-table compact">
+            <thead>
+              <tr>
+                <th>Serviço</th>
+                <th>URL</th>
+                <th>Notas</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Grafana</td>
+                <td><code>http://localhost:3000</code></td>
+                <td>Dashboard: K6 Test Results</td>
+              </tr>
+              <tr>
+                <td>InfluxDB</td>
+                <td><code>http://localhost:8086</code></td>
+                <td>org <code>testflow</code>, bucket <code>k6</code></td>
+              </tr>
+              <tr>
+                <td>TestFlow</td>
+                <td><code>http://localhost:5050</code></td>
+                <td>Mesmo sandbox das outras suites</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Cloud (InfluxDB Cloud + Grafana Cloud)</h3>
+          <pre><code class="language-bash">cp .env.influx.cloud.example .env.influx.cloud   # adicionar tokens
+npm run test:smoke:influx:cloud
+npm run test:load:mixed:influx:cloud</code></pre>
+          <p>
+            Guia completo: <a href="grafana-cloud-setup.md">grafana-cloud-setup.md</a> ·
+            <a href="influxdb-cloud-dashboard.md">influxdb-cloud-dashboard.md</a> ·
+            embed via <a href="grafana/">docs/grafana/</a>
+          </p>
+
+          <div class="callout">
+            GitHub Pages não hospeda InfluxDB nem Grafana. Apenas uma <strong>URL pública do Grafana Cloud</strong>
+            pode ser embutida no site estático.
+          </div>
+        </section>
+
+        <!-- 16. CI -->
+        <section id="ci">
+          <h2>CI — GitHub Actions</h2>
+          <p>Workflow: <code>.github/workflows/k6.yml</code></p>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/githubactions.svg" alt="" aria-hidden="true" />
+                Gate smoke
+              </h4>
+              <p>Cada push/PR executa <code>api-health.js</code> com <code>CI=true</code> e perfil <code>ci</code> mais leve.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/docker.svg" alt="" aria-hidden="true" />
+                Service container
+              </h4>
+              <p><code>qaschool/testflow:latest</code> na porta 5050 com health checks.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/github.svg" alt="" aria-hidden="true" />
+                GitHub Pages
+              </h4>
+              <p>Job <code>publish-pages</code> no push em <code>main</code> — hub docs + relatório HTML com 7 cenários.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/k6-logo.svg" alt="" aria-hidden="true" />
+                Load manual
+              </h4>
+              <p><code>workflow_dispatch</code> — escolha perfil smoke, load, stress ou spike para mixed-traffic.</p>
+            </div>
+          </div>
+
+          <pre><code class="language-yaml"># k6.yml — job smoke (trecho)
+services:
+  testflow:
+    image: qaschool/testflow:latest
+    ports: ['5050:5050']
+env:
+  CI: "true"
+  BASE_URL: http://localhost:5050
+  K6_PROFILE: smoke
+  DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+run: k6 run --summary-export=results/summary.json scenarios/smoke/api-health.js</code></pre>
+
+          <p>
+            Badge: <a href="https://github.com/lflucasferreira/testflow-k6/actions/workflows/k6.yml" target="_blank" rel="noopener">workflow k6 CI</a>
+          </p>
+          <p>
+            O deploy GitHub Pages (anteriormente em <code>pages.yml</code>) está integrado ao job
+            <code>publish-pages</code> neste workflow.
+          </p>
+        </section>
+
+        <!-- 17. Scripts npm -->
+        <section id="scripts-npm">
+          <h2>Referência de scripts npm</h2>
+          <table class="compare-table compact">
+            <thead>
+              <tr>
+                <th>Script</th>
+                <th>Descrição</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="group-row"><td colspan="2">Smoke e CI</td></tr>
+              <tr><td><code>test:smoke</code></td><td>Gate smoke — api-health.js</td></tr>
+              <tr><td><code>test:smoke:ui</code></td><td>Smoke com web dashboard k6 + export HTML</td></tr>
+              <tr><td><code>test:ci</code></td><td>Execução estilo CI com export de summary</td></tr>
+              <tr class="group-row"><td colspan="2">Load</td></tr>
+              <tr><td><code>test:load:auth</code></td><td>Throughput sustentado de login</td></tr>
+              <tr><td><code>test:load:auth:ui</code></td><td>Load auth com web dashboard</td></tr>
+              <tr><td><code>test:load:users</code></td><td>Lista users read-heavy (token via setup)</td></tr>
+              <tr><td><code>test:load:mixed</code></td><td>Tráfego misto ponderado</td></tr>
+              <tr><td><code>test:load:mixed:ui</code></td><td>Mixed traffic com web dashboard</td></tr>
+              <tr class="group-row"><td colspan="2">Stress · Spike · Soak</td></tr>
+              <tr><td><code>test:stress</code></td><td>Ramp stress / breakpoint</td></tr>
+              <tr><td><code>test:spike</code></td><td>Burst spike</td></tr>
+              <tr><td><code>test:soak</code></td><td>Endurance soak (30+ min)</td></tr>
+              <tr class="group-row"><td colspan="2">Journey · Browser</td></tr>
+              <tr><td><code>test:journey:auth</code></td><td>Journey usuário autenticado</td></tr>
+              <tr><td><code>test:journey:login</code></td><td>Journey fluxo de login</td></tr>
+              <tr><td><code>test:browser:login</code></td><td>Login page browser (Chromium)</td></tr>
+              <tr class="group-row"><td colspan="2">Relatórios</td></tr>
+              <tr><td><code>test:report</code></td><td>Suite 7 cenários + relatório HTML</td></tr>
+              <tr><td><code>report:open</code></td><td>Abrir último relatório HTML no browser</td></tr>
+              <tr class="group-row"><td colspan="2">Docker</td></tr>
+              <tr><td><code>docker:up</code></td><td>Subir TestFlow via compose</td></tr>
+              <tr><td><code>docker:down</code></td><td>Parar stack compose</td></tr>
+              <tr><td><code>docker:smoke</code></td><td>Smoke no container k6</td></tr>
+              <tr><td><code>docker:smoke:host</code></td><td>Container k6 → TestFlow no host na 5050</td></tr>
+              <tr><td><code>docker:load</code></td><td>Load mixed-traffic no container</td></tr>
+              <tr><td><code>docker:stress</code></td><td>Stress no container</td></tr>
+              <tr class="group-row"><td colspan="2">Grafana / InfluxDB</td></tr>
+              <tr><td><code>grafana:up</code></td><td>Subir stack de monitoring</td></tr>
+              <tr><td><code>grafana:down</code></td><td>Parar stack de monitoring</td></tr>
+              <tr><td><code>grafana:build</code></td><td>Build imagem Docker k6-influx</td></tr>
+              <tr><td><code>test:smoke:grafana</code></td><td>Smoke → InfluxDB local + Grafana</td></tr>
+              <tr><td><code>test:smoke:influx:local</code></td><td>Smoke → InfluxDB Docker</td></tr>
+              <tr><td><code>test:smoke:influx:cloud</code></td><td>Smoke → InfluxDB Cloud</td></tr>
+              <tr><td><code>test:load:mixed:grafana</code></td><td>Load → Grafana local</td></tr>
+              <tr><td><code>test:load:mixed:influx:local</code></td><td>Load → InfluxDB local</td></tr>
+              <tr><td><code>test:load:mixed:influx:cloud</code></td><td>Load → InfluxDB Cloud</td></tr>
+              <tr class="group-row"><td colspan="2">Docs</td></tr>
+              <tr><td><code>slides</code></td><td>Servir docs na porta 3337</td></tr>
+              <tr><td><code>slides:open</code></td><td>Servir + abrir slides no browser</td></tr>
+              <tr><td><code>docs:open</code></td><td>Servir hub docs na porta 3338</td></tr>
+              <tr><td><code>slides:pdf</code></td><td>Exportar slides para PDF</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- 18. Docs de treinamento -->
+        <section id="docs-treinamento">
+          <h2>Documentação de treinamento</h2>
+          <p>Walkthroughs bloco a bloco para cada script de cenário — ideal para alunos aprendendo k6 e testes orientados a SLO.</p>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/markdown.svg" alt="" aria-hidden="true" />
+                <a href="en/README.md">docs/en/README.md</a>
+              </h4>
+              <p>Índice em inglês — walkthroughs smoke, load, stress, spike, soak, journeys, browser.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/markdown.svg" alt="" aria-hidden="true" />
+                <a href="pt/README.md">docs/pt/README.md</a>
+              </h4>
+              <p>Índice em português — mesma cobertura de cenários.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/k6-logo.svg" alt="" aria-hidden="true" />
+                <a href="threshold-strategy.md">threshold-strategy.md</a>
+              </h4>
+              <p>Checks vs thresholds, tags por endpoint, alinhamento de perfis, métricas customizadas.</p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/revealjs.svg" alt="" aria-hidden="true" />
+                <a href="slides/index.html">slides/</a>
+              </h4>
+              <p>Apresentação Reveal.js — fundamentos k6, tipos de teste, Grafana, CI/CD.</p>
+            </div>
+          </div>
+
+          <h3>Walkthroughs por cenário</h3>
+          <table class="compare-table compact">
+            <thead>
+              <tr>
+                <th>Cenário</th>
+                <th>Doc PT</th>
+                <th>Script</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>API health</td><td><a href="pt/scenarios/smoke/api-health.md">api-health.md</a></td><td><code>scenarios/smoke/api-health.js</code></td></tr>
+              <tr><td>Auth load</td><td><a href="pt/scenarios/load/api-auth.md">api-auth.md</a></td><td><code>scenarios/load/api-auth.js</code></td></tr>
+              <tr><td>Users load</td><td><a href="pt/scenarios/load/api-users.md">api-users.md</a></td><td><code>scenarios/load/api-users.js</code></td></tr>
+              <tr><td>Mixed traffic</td><td><a href="pt/scenarios/load/mixed-traffic.md">mixed-traffic.md</a></td><td><code>scenarios/load/mixed-traffic.js</code></td></tr>
+              <tr><td>Spike</td><td><a href="pt/scenarios/spike/api-spike.md">api-spike.md</a></td><td><code>scenarios/spike/api-spike.js</code></td></tr>
+              <tr><td>Stress</td><td><a href="pt/scenarios/stress/api-breakpoint.md">api-breakpoint.md</a></td><td><code>scenarios/stress/api-breakpoint.js</code></td></tr>
+              <tr><td>Soak</td><td><a href="pt/scenarios/soak/api-endurance.md">api-endurance.md</a></td><td><code>scenarios/soak/api-endurance.js</code></td></tr>
+              <tr><td>Login journey</td><td><a href="pt/journeys/login-flow.md">login-flow.md</a></td><td><code>journeys/login-flow.js</code></td></tr>
+              <tr><td>Auth journey</td><td><a href="pt/journeys/authenticated-user.md">authenticated-user.md</a></td><td><code>journeys/authenticated-user.js</code></td></tr>
+              <tr><td>Browser login</td><td><a href="pt/browser/login-page.md">login-page.md</a></td><td><code>scenarios/browser/login-page.js</code></td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- 19. Boas práticas -->
+        <section id="boas-praticas">
+          <h2>Boas práticas</h2>
+          <ul>
+            <li><strong>Reutilize helpers da lib</strong> — nunca duplique chamadas HTTP ou checks nos cenários</li>
+            <li><strong>Marque todo request</strong> — defina <code>endpoint</code> para thresholds SLO por rota</li>
+            <li><strong>Escolha o perfil certo</strong> — smoke para gates, load para tráfego sustentado, spike para bursts</li>
+            <li><strong>Separe checks de thresholds</strong> — checks validam correção; thresholds validam SLO</li>
+            <li><strong>Exporte handleSummary</strong> — todo cenário deve exportar <code>handleSummary</code> de <code>lib/summary.js</code></li>
+            <li><strong>Use group() em journeys</strong> — timing por passo torna relatórios acionáveis</li>
+            <li><strong>setup() para auth cara</strong> — quando o foco é read/write, não throughput de login</li>
+            <li><strong>Métricas custom com thresholds</strong> — adicione Trend/Rate só quando métricas nativas não bastam</li>
+            <li><strong>Registre novos cenários</strong> — atualize <code>scripts/scenario-catalog.mjs</code> e adicione walkthroughs EN/PT</li>
+            <li><strong>Alinhe com suites funcionais</strong> — budgets SLO espelham timeouts Cypress/Playwright</li>
+            <li><strong>CI rápido</strong> — só perfil smoke no gate de PR; load/stress manual ou via workflow_dispatch</li>
+            <li><strong>Leia threshold-strategy.md</strong> antes de afrouxar limites</li>
+            <li><strong>Testes browser precisam k6 nativo</strong> — fallback Docker não suporta <code>--browser</code></li>
+            <li><strong>Think time entre requests</strong> — use <code>sleep()</code> e <code>thinkTime()</code> para pacing realista</li>
+          </ul>
+        </section>
+
+        <!-- 20. Próximos passos -->
+        <section id="proximos-passos">
+          <h2>Próximos passos</h2>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/revealjs.svg" alt="" aria-hidden="true" />
+                Slides interativos
+              </h4>
+              <p>
+                <a href="slides/index.html">Apresentação Reveal.js</a> com animações, visão geral de tipos de teste,
+                setup Grafana e padrões CI/CD.
+              </p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/k6-logo.svg" alt="" aria-hidden="true" />
+                Documentação oficial
+              </h4>
+              <p>
+                <a href="https://grafana.com/docs/k6/latest/" target="_blank" rel="noopener">grafana.com/docs/k6</a> —
+                executors, métricas, módulo browser, extensions e cloud.
+              </p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/githubactions.svg" alt="" aria-hidden="true" />
+                Relatório live
+              </h4>
+              <p>
+                <a href="https://lflucasferreira.github.io/testflow-k6/report/" target="_blank" rel="noopener">GitHub Pages report</a>
+                — dashboard com 7 cenários atualizado a cada push em main.
+              </p>
+            </div>
+            <div class="feature-card">
+              <h4 class="icon-heading">
+                <img class="tool-icon" src="slides/assets/icons/testflow.svg" alt="" aria-hidden="true" />
+                Aplicação alvo
+              </h4>
+              <p>
+                <a href="https://github.com/qaschoolbr/testflow" target="_blank" rel="noopener">qaschool/testflow</a>
+                — sandbox que todas as suites TestFlow exercitam.
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>
+        <a href="https://github.com/lflucasferreira/testflow-k6" target="_blank" rel="noopener">lflucasferreira/testflow-k6</a>
+        &nbsp;·&nbsp;
+        App alvo:
+        <a href="https://github.com/qaschoolbr/testflow" target="_blank" rel="noopener">qaschool/testflow</a>
+        &nbsp;·&nbsp;
+        <a href="slides/index.html">Voltar aos slides</a>
+        &nbsp;·&nbsp; Junho 2026
+      </p>
+    </footer>
+
+    <script src="slides/js/theme.js" data-base="../"></script>
+    <script src="../node_modules/highlight.js/lib/common.min.js"></script>
+    <script>
+      hljs.highlightAll();
+
+      const links = document.querySelectorAll('.sidebar a');
+      const sections = [...links]
+        .map((a) => document.querySelector(a.getAttribute('href')))
+        .filter(Boolean);
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            links.forEach((l) => l.classList.remove('active'));
+            const active = document.querySelector(`.sidebar a[href="#${entry.target.id}"]`);
+            if (active) active.classList.add('active');
+          });
+        },
+        { rootMargin: '-20% 0px -70% 0px' }
+      );
+
+      sections.forEach((s) => observer.observe(s));
+    </script>
+  </body>
+</html>

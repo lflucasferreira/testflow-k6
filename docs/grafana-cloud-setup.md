@@ -275,7 +275,7 @@ In GitHub repo **Settings → Secrets and variables → Actions → Variables**:
 | `GRAFANA_DASHBOARD_URL` | Public dashboard URL |
 | `GRAFANA_EMBED` | `true` (iframe on `/grafana/`) or `false` (redirect) |
 
-Push to `main` or run workflow **Deploy Performance Report**.  
+Push to `main` — job **publish-pages** in workflow **k6 Performance** runs automatically.  
 Landing card **Grafana Dashboard** → `https://<user>.github.io/testflow-k6/grafana/`
 
 Without `GRAFANA_DASHBOARD_URL`, `/grafana/` redirects to the CI HTML report at `/report/`.

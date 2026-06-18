@@ -1,0 +1,251 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--pw-bg);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, var(--pw-gradient-a), transparent),
+    radial-gradient(circle at 100% 100%, var(--pw-gradient-b), transparent 40%);
+  color: var(--pw-text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+a {
+  color: var(--pw-green);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 2rem;
+  height: 56px;
+  border-bottom: 1px solid var(--pw-border);
+  background: var(--pw-header-bg);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--pw-text);
+  text-decoration: none;
+}
+
+.brand:hover {
+  text-decoration: none;
+}
+
+.brand img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+header nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: var(--pw-muted);
+}
+
+header nav a {
+  color: var(--pw-muted);
+}
+
+header nav a:hover {
+  color: var(--pw-green);
+  text-decoration: none;
+}
+
+header nav a.nav-github {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+header nav a.nav-github img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+[data-theme='dark'] header nav a.nav-github img {
+  filter: brightness(0) invert(1);
+}
+
+[data-theme='light'] header nav a.nav-github img {
+  filter: none;
+}
+
+.hero {
+  text-align: center;
+  padding: 5rem 2rem 3rem;
+}
+
+.hero-logo {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1.5rem;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.35));
+}
+
+.hero h1 {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.02em;
+}
+
+.hero h1 span {
+  color: var(--pw-green);
+}
+
+.hero p {
+  font-size: 1.05rem;
+  color: var(--pw-muted);
+  max-width: 620px;
+  margin: 0 auto 2rem;
+  line-height: 1.7;
+}
+
+.badges {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.badges img {
+  height: 20px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  max-width: 760px;
+  margin: 3rem auto 4rem;
+  padding: 0 2rem;
+}
+
+.cards--inline {
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 1040px;
+}
+
+.card {
+  background: var(--pw-surface);
+  border: 1px solid var(--pw-border);
+  border-radius: 12px;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  text-decoration: none;
+  color: inherit;
+}
+
+.card:hover {
+  border-color: var(--pw-green);
+  box-shadow: 0 8px 32px var(--pw-green-glow);
+  transform: translateY(-3px);
+  text-decoration: none;
+}
+
+.card-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.card h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--pw-text);
+}
+
+.card p {
+  font-size: 0.875rem;
+  color: var(--pw-muted);
+  margin: 0;
+  line-height: 1.6;
+  flex: 1;
+}
+
+.card-arrow {
+  font-size: 0.8rem;
+  color: var(--pw-green);
+  font-family: var(--font-mono);
+  margin-top: auto;
+}
+
+footer {
+  margin-top: auto;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--pw-muted);
+  border-top: 1px solid var(--pw-border);
+}
+
+footer a {
+  color: var(--pw-muted);
+}
+
+footer a:hover {
+  color: var(--pw-green);
+}
+
+@media (max-width: 640px) {
+  .cards,
+  .cards--inline {
+    grid-template-columns: 1fr;
+    padding: 0 1rem;
+  }
+
+  .hero {
+    padding: 3.5rem 1rem 2rem;
+  }
+
+  header {
+    padding: 0 1rem;
+  }
+
+  header nav {
+    gap: 0.65rem;
+    font-size: 0.8rem;
+  }
+}

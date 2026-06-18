@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Report">
+  <title>Report</title>
+  <circle cx="12" cy="12" r="10" fill="#00B050"/>
+  <path fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 12.5 10.5 16 17 8.5"/>
+</svg>

@@ -1,0 +1,64 @@
+/**
+ * k6 docs — light & dark semantic tokens
+ * Set via data-theme on <html> (theme.js)
+ */
+
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+  --pw-green: #7d64ff;
+  --pw-green-dark: #5a45d6;
+  --pw-green-glow: rgba(125, 100, 255, 0.35);
+  --pw-bg: #0f1419;
+  --pw-surface: #1a2332;
+  --pw-surface-2: #111820;
+  --pw-border: #2d3a4d;
+  --pw-text: #e8edf4;
+  --pw-muted: #8b9cb0;
+  --pw-code-bg: #0f1419;
+  --pw-code-text: #c9d1d9;
+  --pw-header-bg: rgba(15, 20, 25, 0.92);
+  --pw-gradient-a: rgba(125, 100, 255, 0.12);
+  --pw-gradient-b: rgba(90, 69, 214, 0.06);
+  --pw-shadow: rgba(0, 0, 0, 0.35);
+  --pw-h1-gradient-start: #ffffff;
+  --pw-step-counter-text: #0f1419;
+  --pw-table-hover: rgba(125, 100, 255, 0.06);
+  --pw-callout-bg: rgba(125, 100, 255, 0.08);
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+  --pw-green: #5a45d6;
+  --pw-green-dark: #7d64ff;
+  --pw-green-glow: rgba(90, 69, 214, 0.22);
+  --pw-bg: #ffffff;
+  --pw-surface: #f4f2ff;
+  --pw-surface-2: #e8e4ff;
+  --pw-border: #c5c0e8;
+  --pw-text: #1a2332;
+  --pw-muted: #5a6b7d;
+  --pw-header-bg: rgba(255, 255, 255, 0.92);
+  --pw-gradient-a: rgba(90, 69, 214, 0.1);
+  --pw-gradient-b: rgba(90, 69, 214, 0.05);
+  --pw-shadow: rgba(26, 35, 50, 0.12);
+  --pw-h1-gradient-start: #1a2332;
+  --pw-step-counter-text: #ffffff;
+  --pw-table-hover: rgba(90, 69, 214, 0.08);
+  --pw-callout-bg: rgba(90, 69, 214, 0.1);
+}
+
+[data-theme='light'] img.tool-icon[src*='apple.svg'],
+[data-theme='light'] img.tool-icon[src*='github.svg'],
+[data-theme='light'] img.tool-icon[src*='microsoft.svg'],
+[data-theme='light'] img.tool-icon[src*='markdown.svg'],
+[data-theme='light'] .card-logo[src*='github.svg'],
+[data-theme='light'] .card-logo[src*='markdown.svg'] {
+  filter: brightness(0);
+}
+
+[data-theme='dark'] img.tool-icon[src*='github.svg'],
+[data-theme='dark'] img.tool-icon[src*='markdown.svg'],
+[data-theme='dark'] .card-logo[src*='markdown.svg'] {
+  filter: brightness(0) invert(1);
+}
